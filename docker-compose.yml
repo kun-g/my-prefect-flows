@@ -52,3 +52,6 @@ services:
 
 volumes:
   pgdata:
+
+networks:
+  prefect-net:
