@@ -6,11 +6,6 @@ from typing import List, Dict, Optional
 from dataclasses import dataclass
 import json
 
-from prefect_github.repository import GitHubRepository
-
-github_repository_block = GitHubRepository.load("github-my-prefect-flows")
-
-
 @dataclass
 class SitemapEntry:
     """Represents a single entry from sitemap"""
