@@ -13,6 +13,21 @@ services:
     depends_on:
         db:
           condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - >-
+          python - <<'PY' 2>/dev/null
+          import urllib.request, sys, json, socket, os
+          try:
+              urllib.request.urlopen('http://localhost:4200/api/health', timeout=3)
+          except Exception:
+              sys.exit(1)
+          PY
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks: [prefect-net]
 
 
