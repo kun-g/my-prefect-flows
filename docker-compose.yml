@@ -4,14 +4,16 @@ services:
   # ---------------------------------------------------------------------------
   prefect:
     image: prefecthq/prefect:3.4.8-python3.12-conda
-    command: ["prefect", "server", "start", "--host", "0.0.0.0"]
+    command: ["prefect", "server", "start"]
     restart: unless-stopped
     ports:
       - "4200"
     environment:
-      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect:prefect@db/prefect
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect:prefect@db:5432/prefect
     depends_on:
-      - db
+      - db:
+        condition: service_healthy
+    networks: [prefect-net]
 
 
   # ---------------------------------------------------------------------------
@@ -21,12 +23,14 @@ services:
   prefect-worker:
     image: prefecthq/prefect:3.4.8-python3.12-conda
     depends_on:
-      - prefect
-    command: ["worker", "start", "-p", "local-process", "--type", "process"]
+      prefect:
+        condition: service_started
+    command: ["prefect", "worker", "start", "-p", "local-process", "--type", "process"]
     environment:
       - PREFECT_API_URL=http://prefect-server:4200/api
       - PREFECT_LOGGING_LEVEL=INFO
     restart: unless-stopped
+    networks: [prefect-net]
 
   # ---------------------------------------------------------------------------
   # 3. PostgreSQL Database
@@ -39,6 +43,12 @@ services:
       POSTGRES_DB: prefect
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prefect"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [prefect-net]
 
 volumes:
   pgdata:
