@@ -21,7 +21,7 @@ services:
   prefect-worker:
     image: prefecthq/prefect:3.4
     depends_on:
-      - prefect-server
+      - prefect
     command: ["worker", "start", "-p", "local-process", "--type", "process"]
     environment:
       - PREFECT_API_URL=http://prefect-server:4200/api
