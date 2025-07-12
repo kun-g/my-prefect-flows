@@ -1,0 +1,11 @@
+[project]
+name = "perfect"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pandas>=2.3.1",
+    "prefect>=3.4.6",
+    "prefect-dbt>=0.7.0",
+]
