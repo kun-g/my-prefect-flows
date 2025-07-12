@@ -1,19 +1,13 @@
 from prefect import flow, task
 import httpx
-import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 import json
-
-@dataclass
-class SitemapEntry:
-    """Represents a single entry from sitemap"""
-    url: str
-    lastmod: Optional[datetime] = None
-    changefreq: Optional[str] = None
-    priority: Optional[float] = None
-
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from lib.sitemap import fetch_sitemap, SitemapEntry
 
 @dataclass
 class UpdatedPage:
@@ -32,48 +26,6 @@ class TodoItem:
     url: str
     priority: str
     created_at: datetime
-
-
-@task(log_prints=True)
-def fetch_sitemap(sitemap_url: str) -> List[SitemapEntry]:
-    """
-    Fetch and parse sitemap XML to extract URLs and metadata
-    """
-    print(f"Fetching sitemap from: {sitemap_url}")
-    
-    try:
-        response = httpx.get(sitemap_url, timeout=30)
-        response.raise_for_status()
-        
-        # Parse XML
-        root = ET.fromstring(response.content)
-        
-        # Handle namespace
-        namespace = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-        
-        entries = []
-        for url_elem in root.findall('.//ns:url', namespace):
-            loc = url_elem.find('ns:loc', namespace)
-            lastmod = url_elem.find('ns:lastmod', namespace)
-            changefreq = url_elem.find('ns:changefreq', namespace)
-            priority = url_elem.find('ns:priority', namespace)
-            
-            if loc is not None:
-                entry = SitemapEntry(
-                    url=loc.text,
-                    lastmod=datetime.fromisoformat(lastmod.text.replace('Z', '+00:00')) if lastmod is not None else None,
-                    changefreq=changefreq.text if changefreq is not None else None,
-                    priority=float(priority.text) if priority is not None else None
-                )
-                entries.append(entry)
-        
-        print(f"Found {len(entries)} URLs in sitemap")
-        return entries
-        
-    except Exception as e:
-        print(f"Error fetching sitemap: {e}")
-        return []
-
 
 @task(log_prints=True)
 def find_recent_updates(entries: List[SitemapEntry], days_back: int = 7) -> List[SitemapEntry]:
@@ -256,21 +208,21 @@ def sitemap_to_todo_workflow(
 
 
 # Example usage
-# if __name__ == "__main__":
-#     # Example with a real sitemap
-#     sitemap_to_todo_workflow(
-#         sitemap_url="https://www.lennysnewsletter.com/sitemap.xml",
-#         days_back=7,
-#         output_file="website_todos.json"
-#     )
+if __name__ == "__main__":
+    # Example with a real sitemap
+    sitemap_to_todo_workflow(
+        sitemap_url="https://www.lennysnewsletter.com/sitemap.xml",
+        days_back=7,
+        output_file="website_todos.json"
+    )
 
 # Uncomment to deploy as a scheduled workflow
-if __name__ == "__main__":
-    sitemap_to_todo_workflow.serve(
-        name="sitemap-todo-deployment",
-        cron="0 9 * * *",  # Daily at 9 AM
-        parameters={
-            "sitemap_url": "https://www.lennysnewsletter.com/sitemap.xml",
-            "days_back": 7,
-        }
-    )
+# if __name__ == "__main__":
+#     sitemap_to_todo_workflow.serve(
+#         name="sitemap-todo-deployment",
+#         cron="0 9 * * *",  # Daily at 9 AM
+#         parameters={
+#             "sitemap_url": "https://www.lennysnewsletter.com/sitemap.xml",
+#             "days_back": 7,
+#         }
+#     )
