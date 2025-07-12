@@ -36,7 +36,7 @@ services:
     environment:
       - PREFECT_API_URL=http://prefect:4200/api
       - PREFECT_LOGGING_LEVEL=INFO
-    restart: unless-stopped
+    # restart: unless-stopped
     networks: [prefect-net]
 
   # ---------------------------------------------------------------------------
