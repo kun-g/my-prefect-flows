@@ -23,10 +23,7 @@ services:
     image: prefecthq/prefect:3.4
     depends_on:
       - prefect-server
-    command: >
-      worker start
-        -p local-process             # Work Pool name (auto‑create if absent)
-        --type process               # Use local process execution
+    command: ["worker", "start", "-p", "local-process", "--type", "process"]
     environment:
       - PREFECT_API_URL=http://prefect-server:4200/api
       - PREFECT_LOGGING_LEVEL=INFO
