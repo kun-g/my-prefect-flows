@@ -18,6 +18,7 @@ pull:
     repository: https://github.com/kun-g/my-prefect-flows.git
     branch: main
     access_token: null
+    credentials: "{{ prefect.blocks.github-credentials.a }}"
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:

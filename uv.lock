@@ -999,6 +999,7 @@ dependencies = [
     { name = "pandas" },
     { name = "prefect" },
     { name = "prefect-dbt" },
+    { name = "prefect-docker" },
     { name = "prefect-github" },
 ]
 
@@ -1007,6 +1008,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.3.1" },
     { name = "prefect", specifier = ">=3.4.6" },
     { name = "prefect-dbt", specifier = ">=0.7.0" },
+    { name = "prefect-docker", specifier = ">=0.6.6" },
     { name = "prefect-github", specifier = ">=0.3.1" },
 ]
 
@@ -1087,6 +1089,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8c/e0/d30f5ea30352b35b68aa45f4388b7250d044cfaae6f63c1274d920304197/prefect_dbt-0.7.0.tar.gz", hash = "sha256:657fac25f6d2c93aec14055068e50da664349bdf2a9ed9c484915176868072ca", size = 65710 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/5f/8b515e4a19ccf8209fac5b9fb29f63733a5be6c3a565f3105c216053a369/prefect_dbt-0.7.0-py3-none-any.whl", hash = "sha256:1f0c2021637a65f1039aac8471d554575967f8b3f058c0db03fb23106d67ee1b", size = 52996 },
+]
+
+[[package]]
+name = "prefect-docker"
+version = "0.6.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "docker" },
+    { name = "exceptiongroup" },
+    { name = "prefect" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/41/f763035762da3dcf641f6d89956e351d48f76bbf72392e4095a9181c1cc9/prefect_docker-0.6.6.tar.gz", hash = "sha256:fd9a927b36d4b86ccbfd810688b186be07a0b2c99afbae5864aaec89963fa078", size = 39079 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/3e/d97e83cd1d0b5d9e40a5cc41838e2b79fc210ec7b533486c5461727cf513/prefect_docker-0.6.6-py3-none-any.whl", hash = "sha256:5b9ab447bfa563cf3304e66b32113727d40fd451144ea3a199e5b6406293eb0b", size = 27518 },
 ]
 
 [[package]]
