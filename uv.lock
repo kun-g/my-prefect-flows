@@ -999,6 +999,7 @@ dependencies = [
     { name = "pandas" },
     { name = "prefect" },
     { name = "prefect-dbt" },
+    { name = "prefect-github" },
 ]
 
 [package.metadata]
@@ -1006,6 +1007,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.3.1" },
     { name = "prefect", specifier = ">=3.4.6" },
     { name = "prefect-dbt", specifier = ">=0.7.0" },
+    { name = "prefect-github", specifier = ">=0.3.1" },
 ]
 
 [[package]]
@@ -1085,6 +1087,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8c/e0/d30f5ea30352b35b68aa45f4388b7250d044cfaae6f63c1274d920304197/prefect_dbt-0.7.0.tar.gz", hash = "sha256:657fac25f6d2c93aec14055068e50da664349bdf2a9ed9c484915176868072ca", size = 65710 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/5f/8b515e4a19ccf8209fac5b9fb29f63733a5be6c3a565f3105c216053a369/prefect_dbt-0.7.0-py3-none-any.whl", hash = "sha256:1f0c2021637a65f1039aac8471d554575967f8b3f058c0db03fb23106d67ee1b", size = 52996 },
+]
+
+[[package]]
+name = "prefect-github"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "prefect" },
+    { name = "sgqlc" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0d/e8/ba11fda51a83b1ebff51767b52502e30aa3d68675bb45af22686e8c9c1ab/prefect_github-0.3.1.tar.gz", hash = "sha256:6324af928f68131bf647038fbb1440f47af7aff6edfb8ae368ed1b7d69160872", size = 335478 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/a4/b241973352a29e36e905db3db9635bfc1b9c89c3070d2c62a52989352188/prefect_github-0.3.1-py3-none-any.whl", hash = "sha256:bec192b84a0ac20766073e23fa67eea952805272f7c32d2e045203832116724a", size = 365775 },
 ]
 
 [[package]]
