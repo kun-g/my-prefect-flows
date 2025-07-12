@@ -44,6 +44,38 @@ def find_recent_updates(entries: List[SitemapEntry], days_back: int = 7) -> List
 
 
 @task(log_prints=True)
+def apply_filters(entries: List[SitemapEntry], filter_config: Optional[Dict] = None) -> List[SitemapEntry]:
+    """
+    Apply URL filters to sitemap entries
+    """
+    if not filter_config:
+        return entries
+    
+    filtered_entries = []
+    
+    for entry in entries:
+        include = True
+        
+        # Apply in_url filters (include URLs containing these strings)
+        if "in_url" in filter_config:
+            in_url_patterns = filter_config["in_url"]
+            if not any(pattern in entry.url for pattern in in_url_patterns):
+                include = False
+        
+        # Apply not_in_url filters (exclude URLs containing these strings)
+        if "not_in_url" in filter_config:
+            not_in_url_patterns = filter_config["not_in_url"]
+            if any(pattern in entry.url for pattern in not_in_url_patterns):
+                include = False
+        
+        if include:
+            filtered_entries.append(entry)
+    
+    print(f"Applied filters: {len(entries)} -> {len(filtered_entries)} entries")
+    return filtered_entries
+
+
+@task(log_prints=True)
 def fetch_page_content(url: str) -> Optional[Dict[str, str]]:
     """
     Fetch page content to extract title and preview
@@ -171,6 +203,7 @@ def sitemap_to_todo_workflow(
     sitemap_url: str,
     days_back: int = 0,
     fetch_content: bool = False,
+    filter: Optional[Dict] = None,
     output_file: str = "todos.json"
 ):
     """
@@ -186,7 +219,15 @@ def sitemap_to_todo_workflow(
         print("No sitemap entries found. Exiting workflow.")
         return
     
-    # Step 2: Find recent updates
+    # Step 2: Apply filters
+    if filter:
+        sitemap_entries = apply_filters(sitemap_entries, filter)
+        
+        if not sitemap_entries:
+            print("No entries match the filter criteria. Exiting workflow.")
+            return
+    
+    # Step 3: Find recent updates
     if days_back > 0:
         sitemap_entries = find_recent_updates(sitemap_entries, days_back)
         
@@ -194,13 +235,13 @@ def sitemap_to_todo_workflow(
             print("No recent updates found. Exiting workflow.")
             return
     
-    # Step 3: Enrich with content
-    enriched_pages = enrich_updates(sitemap_entries, fetch_content=False)
+    # Step 4: Enrich with content
+    enriched_pages = enrich_updates(sitemap_entries, fetch_content)
     
-    # Step 4: Generate TODOs
+    # Step 5: Generate TODOs
     todos = generate_todos(enriched_pages)
     
-    # Step 5: Save TODOs
+    # Step 6: Save TODOs
     output_path = save_todos(todos, output_file)
     
     print(f"Workflow completed! TODOs saved to: {output_path}")
@@ -210,11 +251,28 @@ def sitemap_to_todo_workflow(
 # Example usage
 if __name__ == "__main__":
     # Example with a real sitemap
+    # sitemap_to_todo_workflow(
+    #     sitemap_url="https://www.lennysnewsletter.com/sitemap.xml",
+    #     days_back=0,
+    #     fetch_content=False,
+    #     output_file="output/lennys.json"
+    # )
+
+    # sitemap_to_todo_workflow(
+    #     sitemap_url="https://www.pythonweekly.com/sitemap.xml",
+    #     days_back=0,
+    #     fetch_content=False,
+    #     output_file="output/pythonweekly.json"
+    # )
+
     sitemap_to_todo_workflow(
-        sitemap_url="https://www.lennysnewsletter.com/sitemap.xml",
+        sitemap_url="https://www.prefect.io/sitemap.xml",
         days_back=0,
         fetch_content=False,
-        output_file="output/lennys.json"
+        filter={
+            "in_url": ["/blog/"]
+        },
+        output_file="output/prefect.json"
     )
 
 # Uncomment to deploy as a scheduled workflow
