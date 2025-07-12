@@ -10,6 +10,7 @@ services:
       - "4200"
     environment:
       - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect:prefect@db:5432/prefect
+      - PREFECT_UI_API_URL=${ENDPOINT}/api
     depends_on:
         db:
           condition: service_healthy
