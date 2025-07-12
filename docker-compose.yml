@@ -12,7 +12,7 @@ services:
       - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect:prefect@db:5432/prefect
     depends_on:
         db:
-        condition: service_healthy
+          condition: service_healthy
     networks: [prefect-net]
 
 
