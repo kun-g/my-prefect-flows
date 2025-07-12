@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  prefect:
+    image: prefecthq/prefect:3.4.8-python3.12-conda
+    command: ["orion", "start"]
+    ports:
+      - "4200:4200"
+    environment:
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect:prefect@db/prefect
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17.5
+    environment:
+      POSTGRES_USER: prefect
+      POSTGRES_PASSWORD: prefect
+      POSTGRES_DB: prefect
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
