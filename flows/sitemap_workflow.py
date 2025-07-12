@@ -88,7 +88,7 @@ def fetch_page_content(url: str) -> Optional[Dict[str, str]]:
 
 
 @task(log_prints=True)
-def enrich_updates(recent_updates: List[SitemapEntry]) -> List[UpdatedPage]:
+def enrich_updates(recent_updates: List[SitemapEntry], fetch_content: bool = True) -> List[UpdatedPage]:
     """
     Enrich recent updates with page content
     """
@@ -96,7 +96,10 @@ def enrich_updates(recent_updates: List[SitemapEntry]) -> List[UpdatedPage]:
     
     for entry in recent_updates:
         print(f"Enriching content for: {entry.url}")
-        content = fetch_page_content(entry.url)
+        if fetch_content:
+            content = fetch_page_content(entry.url)
+        else:
+            content = None
         
         page = UpdatedPage(
             url=entry.url,
@@ -129,17 +132,12 @@ def generate_todos(filtered_pages: List[UpdatedPage]) -> List[TodoItem]:
         # Generate meaningful TODO title and description
         title = f"Review updated page: {page.title or page.url.split('/')[-1]}"
         
-        description = f"Page updated on {page.lastmod.strftime('%Y-%m-%d %H:%M')}\n"
-        description += f"URL: {page.url}\n"
-        if page.content_preview:
-            description += f"Preview: {page.content_preview[:100]}..."
-        
         todo = TodoItem(
             title=title,
-            description=description,
+            description="",
             url=page.url,
             priority=priority,
-            created_at=datetime.now()
+            created_at=page.lastmod if page.lastmod else datetime.now()
         )
         todos.append(todo)
     
@@ -171,7 +169,8 @@ def save_todos(todos: List[TodoItem], output_file: str = "todos.json"):
 @flow(name="Sitemap to TODO Workflow")
 def sitemap_to_todo_workflow(
     sitemap_url: str,
-    days_back: int = 7,
+    days_back: int = 0,
+    fetch_content: bool = False,
     output_file: str = "todos.json"
 ):
     """
@@ -188,14 +187,15 @@ def sitemap_to_todo_workflow(
         return
     
     # Step 2: Find recent updates
-    recent_updates = find_recent_updates(sitemap_entries, days_back)
-    
-    if not recent_updates:
-        print("No recent updates found. Exiting workflow.")
-        return
+    if days_back > 0:
+        sitemap_entries = find_recent_updates(sitemap_entries, days_back)
+        
+        if not sitemap_entries:
+            print("No recent updates found. Exiting workflow.")
+            return
     
     # Step 3: Enrich with content
-    enriched_pages = enrich_updates(recent_updates)
+    enriched_pages = enrich_updates(sitemap_entries, fetch_content=False)
     
     # Step 4: Generate TODOs
     todos = generate_todos(enriched_pages)
@@ -212,8 +212,9 @@ if __name__ == "__main__":
     # Example with a real sitemap
     sitemap_to_todo_workflow(
         sitemap_url="https://www.lennysnewsletter.com/sitemap.xml",
-        days_back=7,
-        output_file="website_todos.json"
+        days_back=0,
+        fetch_content=False,
+        output_file="output/lennys.json"
     )
 
 # Uncomment to deploy as a scheduled workflow
