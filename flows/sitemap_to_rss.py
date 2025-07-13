@@ -18,7 +18,7 @@ from lib.rss_generator import (
     RSSChannel, RSSItem, generate_rss_feed, 
     create_rss_item_from_sitemap_entry
 )
-from lib.r2_uploader import create_r2_uploader, R2Config
+from lib.r2 import create_r2_uploader, R2Config
 
 
 @task(log_prints=True)
@@ -179,7 +179,7 @@ def upload_rss_to_r2(
         if r2_config:
             config = R2Config(**r2_config)
         else:
-            config = R2Config.from_env()
+            config = R2Config()
         
         # 创建上传器
         uploader = create_r2_uploader(config)
@@ -187,20 +187,22 @@ def upload_rss_to_r2(
         # 根据参数选择上传方式
         if content is not None:
             # 上传字符串内容
-            result = uploader.upload_string(
+            uploader.upload_string(
                 content=content,
-                object_key=object_key,
-                content_type='application/rss+xml'
+                key=object_key,
+                ContentType='application/rss+xml'
             )
             upload_type = "内容"
+            result = {"success": True, "file_url": uploader.get_url(object_key)}
         else:
             # 上传文件
-            result = uploader.upload_file(
-                local_file_path=file_path,
-                object_key=object_key,
-                content_type='application/rss+xml'
+            uploader.upload(
+                local_path=file_path,
+                key=object_key,
+                ContentType='application/rss+xml'
             )
             upload_type = "文件"
+            result = {"success": True, "file_url": uploader.get_url(object_key)}
         
         # 处理结果
         if result["success"]:
@@ -427,7 +429,7 @@ SAMPLE_CONFIGS = {
         "filter_config": {
             "include_patterns": ["/blog/"],
             "exclude_patterns": ["/blog/tags/", "/blog/page/"],
-            "max_items": 7
+            "max_items": 8
         },
         "output_file": "output/prefect_rss.xml",
         "r2_object_key": "feeds/prefect-blog.xml"
