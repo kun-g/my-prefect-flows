@@ -17,7 +17,6 @@ RUN pip install uv
 COPY pyproject.toml uv.lock ./
 
 # 创建虚拟环境并安装依赖
-RUN uv venv /app/.venv
 RUN uv sync --frozen
 
 # 复制项目代码
