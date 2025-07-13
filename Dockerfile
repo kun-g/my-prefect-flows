@@ -31,5 +31,6 @@ ENV PYTHONPATH="/app:$PYTHONPATH"
 RUN ls -la
 RUN which uv 
 
-CMD ["tail", "-f", "README.md"]
+CMD ["ls"]
+# CMD ["tail", "-f", "README.md"]
 # CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
