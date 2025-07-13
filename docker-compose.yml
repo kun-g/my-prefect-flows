@@ -29,14 +29,18 @@ services:
   #    Listens to the *local-process* Work Pool created automatically on first run
   # ---------------------------------------------------------------------------
   prefect-worker:
-    image: prefecthq/prefect:3.4.8-python3.12-conda
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       prefect:
         condition: service_healthy
-    command: ["prefect", "worker", "start", "-p", "local-process", "--type", "process"]
     environment:
       - PREFECT_API_URL=http://prefect:4200/api
       - PREFECT_LOGGING_LEVEL=INFO
+      - WORKER_POOL_NAME=local-process
+    volumes:
+      - .:/app  # 挂载当前目录以便开发时热重载
     # restart: unless-stopped
     networks: [prefect-net]
 

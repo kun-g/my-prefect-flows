@@ -1040,6 +1040,7 @@ dependencies = [
     { name = "prefect-docker" },
     { name = "prefect-github" },
     { name = "python-dotenv" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -1051,6 +1052,7 @@ requires-dist = [
     { name = "prefect-docker", specifier = ">=0.6.6" },
     { name = "prefect-github", specifier = ">=0.3.1" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
 ]
 
 [[package]]

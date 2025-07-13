@@ -13,4 +13,5 @@ dependencies = [
     "boto3>=1.35.0",
     "python-dotenv>=1.0.0",
     "beautifulsoup4>=4.13.0",
+    "pyyaml>=6.0.2",
 ]

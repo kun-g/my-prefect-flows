@@ -72,6 +72,9 @@ sites:
 # 全局默认配置
 defaults:
   schedule: "0 */6 * * *"
+  work_pool_name: "local-process"
+  # source_repository: 自动从当前 Git 仓库获取，可以手动覆盖
+  entrypoint: "flows/sitemap_to_rss.py:sitemap_to_rss_flow"
   options:
     fetch_titles: true
     sort_by_date: true
