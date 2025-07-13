@@ -172,28 +172,16 @@ def upload_rss_to_r2(
         config = R2Config(**r2_config if r2_config else {})
         uploader = R2Client(config)
 
-        if content is not None:
-            uploader.upload_string(
-                content=content,
-                key=object_key,
-                ContentType='application/rss+xml'
-            )
-            upload_type = "内容"
-            result = {"success": True, "file_url": uploader.get_url(object_key)}
-        else:
-            uploader.upload(
-                local_path=file_path,
-                key=object_key,
-                ContentType='application/rss+xml'
-            )
-            upload_type = "文件"
-            result = {"success": True, "file_url": uploader.get_url(object_key)}
+        # 使用统一的 upload 方法，自动处理内容和文件路径
+        uploader.upload(
+            content=content,
+            local_path=file_path,
+            key=object_key,
+            ContentType='application/rss+xml'
+        )
         
-        # 处理结果
-        if result["success"]:
-            print(f"RSS {upload_type}已成功上传到 R2: {result['file_url']}")
-        else:
-            print(f"上传 RSS {upload_type}到 R2 失败: {result.get('error', 'Unknown error')}")
+        result = {"success": True, "file_url": uploader.get_url(object_key)}
+        print(f"RSS已成功上传到 R2: {result['file_url']}")
         
         return result
         
