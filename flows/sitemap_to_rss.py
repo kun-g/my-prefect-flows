@@ -173,7 +173,7 @@ def upload_rss_to_r2(
         uploader = R2Client(config)
 
         if content is not None:
-            uploader.upload_string(
+            uploader.upload(
                 content=content,
                 key=object_key,
                 ContentType='application/rss+xml'

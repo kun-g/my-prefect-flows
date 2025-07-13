@@ -81,14 +81,6 @@ class R2Client:
             
             self._cli.put_object(Bucket=self._bucket, Key=key, Body=data, **kwargs)
 
-    def upload_bytes(self, data: bytes, key: str, **kwargs):
-        """Legacy method - use upload(content=data, key=key) instead"""
-        self.upload(content=data, key=key, **kwargs)
-
-    def upload_string(self, content: str, key: str, encoding: str = "utf-8", **kwargs):
-        """Legacy method - use upload(content=content, key=key) instead"""
-        self.upload(content=content, key=key, encoding=encoding, **kwargs)
-
     def download(self, key: str, local_path: str):
         self._cli.download_file(self._bucket, key, local_path)
 
