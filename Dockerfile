@@ -21,12 +21,12 @@ RUN pip install uv -U
 
 COPY --chown=prefect:prefect . /app
 
-RUN uv sync --frozen
-
 # 设置环境变量 - 确保虚拟环境的 bin 目录在 PATH 中
-# ENV VIRTUAL_ENV="/app/.venv"
-# ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-# ENV PYTHONPATH="/workspace:$PYTHONPATH"
+ENV VIRTUAL_ENV="/app/.venv"
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV PYTHONPATH="/workspace:$PYTHONPATH"
+
+RUN uv sync --frozen
 
 RUN ls -la
 # RUN which uv 
