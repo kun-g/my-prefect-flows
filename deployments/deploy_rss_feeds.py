@@ -72,6 +72,8 @@ def deploy_single_site(site_name: str, site_config: Dict[str, Any], use_r2: bool
             "output_file": site_config["output"]["local_file"],
             "filter_config": site_config.get("filter_config"),
             "fetch_titles": site_config["options"].get("fetch_titles", True),
+            "extract_content": site_config["options"].get("extract_content", False),
+            "content_length": site_config["options"].get("content_length", 500),
             "max_items": site_config["options"].get("max_items", 30),
             "sort_by_date": site_config["options"].get("sort_by_date", True),
         }
