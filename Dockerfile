@@ -10,14 +10,15 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# 安装 uv（在切换用户之前）
+RUN pip install uv -U
+
 # 创建非 root 用户
 RUN useradd --create-home --shell /bin/bash prefect
 
 RUN chown -R prefect:prefect /app
 
 USER prefect
-
-RUN pip install uv -U
 
 COPY --chown=prefect:prefect . /app
 
