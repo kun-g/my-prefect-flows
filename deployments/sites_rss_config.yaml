@@ -1,0 +1,90 @@
+# RSS 订阅网站配置文件
+# 用于 sitemap 到 RSS 转换的配置管理
+
+sites:
+  lennysnewsletter:
+    enabled: true
+    sitemap_url: "https://www.lennysnewsletter.com/sitemap.xml"
+    schedule: "0 */6 * * *"  # 每6小时运行一次
+    channel_config:
+      title: "Lenny's Newsletter Updates"
+      link: "https://www.lennysnewsletter.com"
+      description: "Latest updates from Lenny's Newsletter"
+      language: "en"
+      ttl: 60
+    filter_config:
+      include_patterns: ["/p/"]
+      max_items: 20
+    options:
+      fetch_titles: true
+      sort_by_date: true
+      max_items: 20
+      upload_method: "direct"
+    output:
+      local_file: "output/lennys_rss.xml"
+      r2_object_key: "feeds/lennys-newsletter.xml"
+
+  pythonweekly:
+    enabled: true
+    sitemap_url: "https://www.pythonweekly.com/sitemap.xml"
+    schedule: "0 */8 * * *"  # 每8小时运行一次
+    channel_config:
+      title: "Python Weekly Updates"
+      link: "https://www.pythonweekly.com"
+      description: "Latest Python Weekly newsletters"
+      language: "en"
+      ttl: 60
+    filter_config:
+      include_patterns: ["/archive/"]
+      max_items: 15
+    options:
+      fetch_titles: true
+      sort_by_date: true
+      max_items: 15
+      upload_method: "direct"
+    output:
+      local_file: "output/pythonweekly_rss.xml"
+      r2_object_key: "feeds/python-weekly.xml"
+
+  prefect:
+    enabled: true
+    sitemap_url: "https://www.prefect.io/sitemap.xml"
+    schedule: "0 */12 * * *"  # 每12小时运行一次
+    channel_config:
+      title: "Prefect Blog Updates"
+      link: "https://www.prefect.io"
+      description: "Latest blog posts from Prefect"
+      language: "en"
+      ttl: 60
+    filter_config:
+      include_patterns: ["/blog/"]
+      exclude_patterns: ["/blog/tags/", "/blog/page/"]
+      max_items: 9
+    options:
+      fetch_titles: true
+      sort_by_date: true
+      max_items: 20
+      upload_method: "direct"
+    output:
+      local_file: "output/prefect_rss.xml"
+      r2_object_key: "feeds/prefect-blog.xml"
+
+# 全局默认配置
+defaults:
+  schedule: "0 */6 * * *"
+  options:
+    fetch_titles: true
+    sort_by_date: true
+    max_items: 30
+    upload_method: "direct"
+  channel_config:
+    language: "zh-CN"
+    ttl: 60
+
+# R2 配置（如需要覆盖环境变量）
+# r2_config:
+#   account_id: "your-account-id"
+#   access_key_id: "your-access-key"
+#   secret_access_key: "your-secret-key"
+#   bucket_name: "your-bucket-name"
+#   endpoint_url: "https://your-account-id.r2.cloudflarestorage.com"

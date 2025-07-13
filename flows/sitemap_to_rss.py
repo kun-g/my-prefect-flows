@@ -357,41 +357,10 @@ def sitemap_to_rss_with_r2_flow(
     return result
 
 
-# 示例配置
-SAMPLE_CONFIGS = {
-    "lennysnewsletter": {
-        "sitemap_url": "https://www.lennysnewsletter.com/sitemap.xml",
-        "channel_config": {
-            "title": "Lenny's Newsletter Updates",
-            "link": "https://www.lennysnewsletter.com",
-            "description": "Latest updates from Lenny's Newsletter",
-            "language": "en"
-        },
-        "filter_config": {
-            "include_patterns": ["/p/"],
-            "max_items": 20
-        },
-        "output_file": "output/lennys_rss.xml",
-        "r2_object_key": "feeds/lennys-newsletter.xml"
-    },
-    
-    "pythonweekly": {
-        "sitemap_url": "https://www.pythonweekly.com/sitemap.xml",
-        "channel_config": {
-            "title": "Python Weekly Updates",
-            "link": "https://www.pythonweekly.com",
-            "description": "Latest Python Weekly newsletters",
-            "language": "en"
-        },
-        "filter_config": {
-            "include_patterns": ["/archive/"],
-            "max_items": 15
-        },
-        "output_file": "output/pythonweekly_rss.xml",
-        "r2_object_key": "feeds/python-weekly.xml"
-    },
-    
-    "prefect": {
+# 示例使用
+if __name__ == "__main__":
+    # 测试单个网站的 RSS 生成
+    test_config = {
         "sitemap_url": "https://www.prefect.io/sitemap.xml",
         "channel_config": {
             "title": "Prefect Blog Updates",
@@ -402,88 +371,28 @@ SAMPLE_CONFIGS = {
         "filter_config": {
             "include_patterns": ["/blog/"],
             "exclude_patterns": ["/blog/tags/", "/blog/page/"],
-            "max_items": 8
+            "max_items": 5
         },
-        "output_file": "output/prefect_rss.xml",
-        "r2_object_key": "feeds/prefect-blog.xml"
+        "output_file": "test_output.xml",
+        "r2_object_key": "test/prefect-blog.xml"
     }
-}
-
-
-# 示例使用
-if __name__ == "__main__":
-    # 使用预定义配置 - 仅生成 RSS
-    config = SAMPLE_CONFIGS["prefect"]
     
-    # 选择流程类型
-    use_r2_upload = True  # 设置为 True 启用 R2 上传
+    print("测试 RSS 生成流程...")
+    print("如需部署多个网站，请使用: python deployments/deploy_rss_feeds.py")
+    print("-" * 50)
     
-    if use_r2_upload:
-        # 生成 RSS 并上传到 R2
-        result = sitemap_to_rss_with_r2_flow(
-            sitemap_url=config["sitemap_url"],
-            channel_config=config["channel_config"],
-            r2_object_key=config["r2_object_key"],
-            output_file=config["output_file"],
-            filter_config=config["filter_config"],
-            fetch_titles=True,  # 获取真实的页面标题
-            max_items=20,
-            sort_by_date=True,
-            upload_method="direct"  # 直接上传内容，不保存本地文件
-        )
-        
-        if result:
-            print(f"\n流程执行结果:")
-            print(f"RSS 生成: {result['rss_generation']}")
-            print(f"R2 上传: {result['r2_upload']}")
+    # 仅生成 RSS 到本地文件
+    result = sitemap_to_rss_flow(
+        sitemap_url=test_config["sitemap_url"],
+        channel_config=test_config["channel_config"],
+        output_file=test_config["output_file"],
+        filter_config=test_config["filter_config"],
+        fetch_titles=True,
+        max_items=5,
+        sort_by_date=True
+    )
+    
+    if result:
+        print(f"\n测试结果: {result}")
     else:
-        # 仅生成 RSS 到本地文件
-        result = sitemap_to_rss_flow(
-            sitemap_url=config["sitemap_url"],
-            channel_config=config["channel_config"],
-            output_file=config["output_file"],
-            filter_config=config["filter_config"],
-            fetch_titles=True,  # 获取真实的页面标题
-            max_items=20,
-            sort_by_date=True
-        )
-        
-        if result:
-            print(f"\n流程执行结果: {result}")
-
-
-# 部署为定时任务的示例
-def deploy_rss_feeds():
-    """部署多个 RSS feed 生成任务（仅本地保存）"""
-    for name, config in SAMPLE_CONFIGS.items():
-        sitemap_to_rss_flow.serve(
-            name=f"rss-{name}",
-            cron="0 */6 * * *",  # 每6小时运行一次
-            parameters={
-                "sitemap_url": config["sitemap_url"],
-                "channel_config": config["channel_config"],
-                "output_file": config["output_file"],
-                "filter_config": config["filter_config"],
-                "fetch_titles": True,
-                "max_items": 30
-            }
-        )
-
-
-def deploy_rss_feeds_with_r2():
-    """部署多个 RSS feed 生成并上传到 R2 的任务"""
-    for name, config in SAMPLE_CONFIGS.items():
-        sitemap_to_rss_with_r2_flow.serve(
-            name=f"rss-r2-{name}",
-            cron="0 */6 * * *",  # 每6小时运行一次
-            parameters={
-                "sitemap_url": config["sitemap_url"],
-                "channel_config": config["channel_config"],
-                "r2_object_key": config["r2_object_key"],
-                "output_file": config["output_file"],
-                "filter_config": config["filter_config"],
-                "fetch_titles": True,
-                "max_items": 30,
-                "upload_method": "direct"
-            }
-        )
+        print("\n测试失败")
