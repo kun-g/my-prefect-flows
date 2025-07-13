@@ -173,7 +173,6 @@ def upload_rss_to_r2(
         uploader = R2Client(config)
 
         # 使用统一的 upload 方法，自动处理内容和文件路径
-        upload_type = "内容" if content is not None else "文件"
         uploader.upload(
             content=content,
             local_path=file_path,
@@ -182,7 +181,7 @@ def upload_rss_to_r2(
         )
         
         result = {"success": True, "file_url": uploader.get_url(object_key)}
-        print(f"RSS {upload_type}已成功上传到 R2: {result['file_url']}")
+        print(f"RSS已成功上传到 R2: {result['file_url']}")
         
         return result
         
