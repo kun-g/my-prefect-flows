@@ -336,7 +336,7 @@ if __name__ == "__main__":
         "filter_config": {
             "include_patterns": ["/blog/"],
             "exclude_patterns": ["/blog/tags/", "/blog/page/"],
-            "max_items": 5
+            "max_items": 30
         },
         "output_file": "output/prefect-blog.xml",
         "r2_object_key": "feeds/prefect-blog.xml"
@@ -351,6 +351,7 @@ if __name__ == "__main__":
         sitemap_url=test_config["sitemap_url"],
         channel_config=test_config["channel_config"],
         output_file=test_config["output_file"],
+        r2_object_key=test_config["r2_object_key"],
         filter_config=test_config["filter_config"],
         fetch_titles=True,
         extract_content=True,  # 默认已开启内容提取
