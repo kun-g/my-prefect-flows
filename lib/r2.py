@@ -40,15 +40,54 @@ class R2Client:
             config=boto3.session.Config(signature_version="s3v4"),
         )
     # ---------- 基础操作 ----------
-    def upload(self, local_path: str, key: str | None = None, **kwargs):
-        key = key or os.path.basename(local_path)
-        self._cli.upload_file(local_path, self._bucket, key, ExtraArgs=kwargs or None)
+    def upload(self, local_path: str | None = None, *, content: str | bytes | None = None, key: str | None = None, encoding: str = "utf-8", **kwargs):
+        """
+        Unified upload function that handles file paths, string content, and bytes content.
+        
+        Args:
+            local_path: Path to local file to upload
+            content: String or bytes content to upload (keyword-only)
+            key: Object key in bucket (defaults to basename of local_path if uploading file)
+            encoding: Encoding for string content (default: utf-8)
+            **kwargs: Additional arguments passed to boto3
+            
+        Examples:
+            upload("abc.jpg")                    # Upload file from path
+            upload(content="abc")                # Upload string content
+            upload(content=b"abc")               # Upload bytes content
+            upload("abc.jpg", key="custom-key")  # Upload file with custom key
+        """
+        # Validate arguments
+        if (local_path is None) == (content is None):
+            raise ValueError("Must provide either local_path or content parameter, not both or neither")
+        
+        if local_path is not None:
+            # File upload mode
+            key = key or os.path.basename(local_path)
+            self._cli.upload_file(local_path, self._bucket, key, ExtraArgs=kwargs or None)
+        else:
+            # Content upload mode
+            if key is None:
+                raise ValueError("key parameter is required when uploading content")
+            
+            if isinstance(content, str):
+                # String content - encode to bytes
+                data = content.encode(encoding)
+            elif isinstance(content, bytes):
+                # Bytes content - use directly
+                data = content
+            else:
+                raise ValueError("content must be str or bytes")
+            
+            self._cli.put_object(Bucket=self._bucket, Key=key, Body=data, **kwargs)
 
     def upload_bytes(self, data: bytes, key: str, **kwargs):
-        self._cli.put_object(Bucket=self._bucket, Key=key, Body=data, **kwargs)
+        """Legacy method - use upload(content=data, key=key) instead"""
+        self.upload(content=data, key=key, **kwargs)
 
     def upload_string(self, content: str, key: str, encoding: str = "utf-8", **kwargs):
-        self.upload_bytes(content.encode(encoding), key, **kwargs)
+        """Legacy method - use upload(content=content, key=key) instead"""
+        self.upload(content=content, key=key, encoding=encoding, **kwargs)
 
     def download(self, key: str, local_path: str):
         self._cli.download_file(self._bucket, key, local_path)
