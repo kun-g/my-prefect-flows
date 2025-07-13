@@ -34,6 +34,6 @@ RUN useradd --create-home --shell /bin/bash prefect
 RUN ls -la
 # RUN which uv 
 
-CMD ["ls"]
+CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
 # CMD ["tail", "-f", "README.md"]
 # CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
