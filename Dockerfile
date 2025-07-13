@@ -1,5 +1,4 @@
-# 使用官方 Python 3.13 镜像作为基础镜像
-FROM python:3.13-slim
+FROM prefecthq/prefect:3.4.8-python3.12-conda
 
 # 设置工作目录
 WORKDIR /app
@@ -34,4 +33,4 @@ RUN chown -R prefect:prefect /app
 USER prefect
 
 # 默认命令（可以通过 docker-compose 覆盖）
-CMD ["uv", "run", "prefect", "worker", "start", "--type", "process"]
+CMD ["prefect", "worker", "start", "--type", "process"]
