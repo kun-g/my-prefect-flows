@@ -10,8 +10,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install uv
-
 # 创建非 root 用户
 RUN useradd --create-home --shell /bin/bash prefect
 
@@ -22,7 +20,9 @@ RUN chown -R prefect:prefect /workspace
 
 USER prefect
 
-COPY --chown=prefect:prefect . /workspace
+RUN pip install uv
+
+COPY --chown=prefect:prefect /app /workspace
 
 RUN uv sync --frozen
 
