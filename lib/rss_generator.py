@@ -1,8 +1,7 @@
-import xml.etree.ElementTree as ET
+import PyRSS2Gen as rss
 from datetime import datetime
 from typing import List, Optional
 from dataclasses import dataclass
-import html
 
 
 @dataclass
@@ -33,149 +32,110 @@ class RSSChannel:
 def generate_rss_feed(channel: RSSChannel, items: List[RSSItem]) -> str:
     """
     生成 RSS 2.0 格式的 XML feed
+    
+    使用 PyRSS2Gen 简化实现，保持接口兼容性
     """
-    # 创建根元素
-    rss = ET.Element("rss")
-    rss.set("version", "2.0")
-    rss.set("xmlns:atom", "http://www.w3.org/2005/Atom")
-    
-    # 创建 channel 元素
-    channel_elem = ET.SubElement(rss, "channel")
-    
-    # 添加频道基本信息
-    ET.SubElement(channel_elem, "title").text = channel.title
-    ET.SubElement(channel_elem, "link").text = channel.link
-    ET.SubElement(channel_elem, "description").text = channel.description
-    ET.SubElement(channel_elem, "language").text = channel.language
-    ET.SubElement(channel_elem, "generator").text = channel.generator
-    ET.SubElement(channel_elem, "ttl").text = str(channel.ttl)
-    
-    # 添加 atom:link 自引用
-    atom_link = ET.SubElement(channel_elem, "{http://www.w3.org/2005/Atom}link")
-    atom_link.set("href", f"{channel.link}/rss.xml")
-    atom_link.set("rel", "self")
-    atom_link.set("type", "application/rss+xml")
-    
-    # 添加时间信息
-    now = datetime.now()
-    if channel.pub_date:
-        ET.SubElement(channel_elem, "pubDate").text = format_rss_date(channel.pub_date)
-    else:
-        ET.SubElement(channel_elem, "pubDate").text = format_rss_date(now)
-    
-    if channel.last_build_date:
-        ET.SubElement(channel_elem, "lastBuildDate").text = format_rss_date(channel.last_build_date)
-    else:
-        ET.SubElement(channel_elem, "lastBuildDate").text = format_rss_date(now)
-    
-    # 添加条目
+    # 创建 RSS 条目
+    rss_items = []
     for item in items:
-        item_elem = ET.SubElement(channel_elem, "item")
-        
-        ET.SubElement(item_elem, "title").text = html.escape(item.title)
-        ET.SubElement(item_elem, "link").text = item.link
-        
-        # Handle description with potential HTML content
-        create_cdata_element(item_elem, "description", item.description)
-        
-        # GUID (通常使用链接)
-        guid_elem = ET.SubElement(item_elem, "guid")
-        guid_elem.text = item.guid or item.link
-        guid_elem.set("isPermaLink", "true" if not item.guid else "false")
-        
-        # 发布日期
-        if item.pub_date:
-            ET.SubElement(item_elem, "pubDate").text = format_rss_date(item.pub_date)
-        
-        # 作者
-        if item.author:
-            ET.SubElement(item_elem, "author").text = html.escape(item.author)
-        
-        # 分类
-        if item.category:
-            ET.SubElement(item_elem, "category").text = html.escape(item.category)
+        rss_item = rss.RSSItem(
+            title=item.title,
+            link=item.link,
+            description=item.description,
+            pubDate=item.pub_date,
+            guid=rss.Guid(
+                item.guid or item.link,
+                isPermaLink=bool(not item.guid)
+            ),
+            author=item.author,
+            categories=[item.category] if item.category else None
+        )
+        rss_items.append(rss_item)
     
-    # 转换为字符串
-    xml_str = ET.tostring(rss, encoding="unicode", method="xml")
+    # 创建 RSS 频道
+    feed = rss.RSS2(
+        title=channel.title,
+        link=channel.link,
+        description=channel.description,
+        language=channel.language,
+        lastBuildDate=channel.last_build_date or datetime.now(),
+        pubDate=channel.pub_date or datetime.now(),
+        generator=channel.generator,
+        ttl=channel.ttl,
+        items=rss_items
+    )
     
-    # 添加 XML 声明
-    formatted_xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str
+    # 生成 XML
+    xml_content = feed.to_xml(encoding='utf-8')
+    if isinstance(xml_content, bytes):
+        xml_content = xml_content.decode('utf-8')
     
-    # Post-process to add CDATA sections for HTML content
-    formatted_xml = _add_cdata_to_descriptions(formatted_xml)
+    # 添加必要的兼容性处理
+    xml_content = _add_compatibility_features(xml_content, channel.link)
     
-    return formatted_xml
+    return xml_content
 
 
-def _add_cdata_to_descriptions(xml_str: str) -> str:
+def _add_compatibility_features(xml_str: str, channel_link: str) -> str:
     """
-    Post-process XML to wrap HTML descriptions in CDATA sections
+    添加关键的兼容性功能
     """
     import re
+    import html
     
-    def replace_html_description(match):
+    # 1. 添加 Atom 命名空间
+    xml_str = xml_str.replace(
+        '<rss version="2.0">',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">'
+    )
+    
+    # 2. 移除默认的 docs 元素
+    xml_str = re.sub(r'<docs>.*?</docs>', '', xml_str)
+    
+    # 3. 添加自引用链接
+    atom_link = f'<atom:link href="{channel_link}/rss.xml" rel="self" type="application/rss+xml" />'
+    xml_str = re.sub(r'(</ttl>\s*)', f'\\1{atom_link}', xml_str)
+    
+    # 4. 转换日期格式
+    xml_str = xml_str.replace(' GMT</', ' +0000</')
+    
+    # 5. 转换 HTML 内容为 CDATA
+    def to_cdata(match):
         content = match.group(1)
-        # Check if content contains HTML tags (escaped or unescaped)
-        if ('&lt;' in content and '&gt;' in content) or ('<' in content and '>' in content):
-            # Unescape any entities that ElementTree added and wrap in CDATA
+        if '&lt;' in content and '&gt;' in content:
             content = html.unescape(content)
             return f'<description><![CDATA[{content}]]></description>'
-        else:
-            # Keep plain text as-is
-            return match.group(0)
+        return match.group(0)
     
-    # Find and replace description elements
-    pattern = r'<description>(.*?)</description>'
-    result = re.sub(pattern, replace_html_description, xml_str, flags=re.DOTALL)
+    xml_str = re.sub(r'<description>(.*?)</description>', to_cdata, xml_str, flags=re.DOTALL)
     
-    return result
+    return xml_str
 
 
-def create_cdata_element(parent, tag_name, content):
-    """
-    Create an XML element with content (will be post-processed for CDATA if needed)
-    """
-    elem = ET.SubElement(parent, tag_name)
-    elem.text = content if content else ""
-    return elem
-
-
+# 保持向后兼容的辅助函数
 def format_rss_date(dt: datetime) -> str:
-    """
-    将 datetime 对象格式化为 RSS 标准的日期格式 (RFC 822)
-    例如: Mon, 12 Jul 2025 10:30:00 +0000
-    """
+    """将 datetime 对象格式化为 RSS 标准的日期格式 (RFC 822)"""
     return dt.strftime("%a, %d %b %Y %H:%M:%S +0000")
 
 
 def extract_title_from_url(url: str) -> str:
-    """
-    从 URL 中提取标题，作为默认标题
-    """
-    # 移除协议和域名
+    """从 URL 中提取标题，作为默认标题"""
     path = url.split('//')[-1]
     if '/' in path:
         path = '/'.join(path.split('/')[1:])
     
-    # 移除文件扩展名
     if '.' in path.split('/')[-1]:
         path = path.rsplit('.', 1)[0]
     
-    # 替换分隔符为空格并标题化
     title = path.replace('-', ' ').replace('_', ' ').replace('/', ' - ')
-    
     return title.title() if title else "Untitled"
 
 
 def create_rss_item_from_sitemap_entry(entry, title: Optional[str] = None, description: Optional[str] = None) -> RSSItem:
-    """
-    从 sitemap 条目创建 RSS 条目
-    """
-    # 如果没有提供标题，尝试从 URL 提取
+    """从 sitemap 条目创建 RSS 条目"""
     if not title:
         title = extract_title_from_url(entry.url)
     
-    # 如果没有描述，使用默认描述
     if not description:
         description = f"页面更新于 {entry.lastmod.strftime('%Y-%m-%d %H:%M:%S') if entry.lastmod else '未知时间'}"
     
