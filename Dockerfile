@@ -33,7 +33,4 @@ RUN useradd --create-home --shell /bin/bash prefect
 RUN chown -R prefect:prefect /app
 USER prefect
 
-RUN ls /app -la
-
-# 默认命令（可以通过 docker-compose 覆盖）
-CMD ["uv", "run", "prefect", "worker", "start", "--type", "process"]
+CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
