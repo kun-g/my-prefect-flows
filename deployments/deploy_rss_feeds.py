@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run
 """
 RSS Feed 部署脚本
 用于部署多个网站的 RSS 生成任务
@@ -6,6 +6,7 @@ RSS Feed 部署脚本
 
 import sys
 import yaml
+import subprocess
 from pathlib import Path
 from typing import Dict, Any
 
@@ -17,6 +18,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from flows.sitemap_to_rss import sitemap_to_rss_flow
+
+
+def get_git_repository_url() -> str:
+    """获取当前 Git 仓库的远程 URL"""
+    try:
+        # 获取 origin remote 的 URL
+        result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # 如果获取失败，返回默认值
+        return "https://github.com/user/repo.git"
 
 
 def load_sites_config(config_path: str = "deployments/sites_rss_config.yaml") -> Dict[str, Any]:
@@ -53,6 +71,18 @@ def merge_with_defaults(site_config: Dict[str, Any], defaults: Dict[str, Any]) -
     if 'schedule' not in merged:
         merged['schedule'] = defaults.get('schedule', "0 */6 * * *")
     
+    # 如果没有指定 work_pool_name，使用默认值
+    if 'work_pool_name' not in merged:
+        merged['work_pool_name'] = defaults.get('work_pool_name', "default")
+    
+    # 如果没有指定 source_repository，使用默认值
+    if 'source_repository' not in merged:
+        merged['source_repository'] = defaults.get('source_repository', get_git_repository_url())
+    
+    # 如果没有指定 entrypoint，使用默认值
+    if 'entrypoint' not in merged:
+        merged['entrypoint'] = defaults.get('entrypoint', "flows/sitemap_to_rss.py:sitemap_to_rss_flow")
+    
     return merged
 
 
@@ -76,7 +106,6 @@ def deploy_single_site(site_name: str, site_config: Dict[str, Any], use_r2: bool
             "sort_by_date": site_config["options"].get("sort_by_date", True),
         }
         
-        # 添加 R2 特定参数
         if use_r2:
             deploy_params.update({
                 "r2_object_key": site_config["output"]["r2_object_key"],
@@ -85,14 +114,18 @@ def deploy_single_site(site_name: str, site_config: Dict[str, Any], use_r2: bool
             })
             deployment_name = f"rss-r2-{site_name}"
         else:
-            # 本地模式不设置 r2_object_key，这样就不会上传到 R2
             deployment_name = f"rss-{site_name}"
         
         # 创建部署
-        sitemap_to_rss_flow.serve(
+        sitemap_to_rss_flow.from_source(
+            source=site_config.get("source_repository", get_git_repository_url()),
+            entrypoint=site_config.get("entrypoint", "flows/sitemap_to_rss.py:sitemap_to_rss_flow")
+        ).deploy(
             name=deployment_name,
+            work_pool_name=site_config.get("work_pool_name", "default"),
             cron=site_config["schedule"],
             parameters=deploy_params,
+            ignore_warnings=True,
             description=f"RSS feed generation for {site_name}",
             tags=[
                 "rss",
