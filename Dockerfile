@@ -32,7 +32,7 @@ RUN useradd --create-home --shell /bin/bash prefect
 # ENV PYTHONPATH="/workspace:$PYTHONPATH"
 
 RUN ls -la
-RUN which uv 
+# RUN which uv 
 
 CMD ["ls"]
 # CMD ["tail", "-f", "README.md"]
