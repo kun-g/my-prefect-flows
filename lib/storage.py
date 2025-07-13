@@ -5,12 +5,9 @@ Implements StorageProvider interface for different storage backends.
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
-import boto3
-from boto3.session import Config
-from botocore.exceptions import ClientError, NoCredentialsError
 
 from .interfaces import StorageProvider, Logger
-from .config import R2Configuration
+from .r2 import R2Client, R2Config
 
 
 class LocalFileStorage(StorageProvider):
@@ -103,48 +100,30 @@ class LocalFileStorage(StorageProvider):
 
 
 class R2Storage(StorageProvider):
-    """Cloudflare R2 storage provider"""
+    """Cloudflare R2 storage provider using the new R2Client"""
     
-    def __init__(self, config: R2Configuration, logger: Optional[Logger] = None):
+    def __init__(self, config: R2Config, logger: Optional[Logger] = None):
         self.config = config
         self.logger = logger
-        self._client = None
-        
-        if not config.validate():
-            raise ValueError("R2 configuration is incomplete")
-    
-    @property
-    def client(self):
-        """Lazy initialization of S3 client"""
-        if self._client is None:
-            self._client = self._create_client()
-        return self._client
+        self.client = R2Client(config)
     
     def store(self, content: str, key: str, content_type: Optional[str] = None) -> Dict[str, Any]:
         """Store content to R2"""
         try:
-            # Prepare upload arguments
-            extra_args = {}
+            # Prepare upload kwargs
+            kwargs = {}
             if content_type:
-                extra_args['ContentType'] = content_type
+                kwargs['ContentType'] = content_type
             elif key.endswith('.xml'):
-                extra_args['ContentType'] = 'application/rss+xml'
+                kwargs['ContentType'] = 'application/rss+xml'
             elif key.endswith('.json'):
-                extra_args['ContentType'] = 'application/json'
+                kwargs['ContentType'] = 'application/json'
             
-            # Convert string to bytes
-            content_bytes = content.encode('utf-8')
-            
-            # Upload to R2
-            self.client.put_object(
-                Bucket=self.config.bucket_name,
-                Key=key,
-                Body=content_bytes,
-                **extra_args
-            )
+            # Upload using the new R2Client
+            self.client.upload_string(content, key, **kwargs)
             
             # Build access URL
-            file_url = self._get_file_url(key)
+            file_url = self.client.get_url(key)
             
             self._log_info(f"Content uploaded to R2: {key}")
             
@@ -152,8 +131,8 @@ class R2Storage(StorageProvider):
                 "success": True,
                 "key": key,
                 "file_url": file_url,
-                "bucket": self.config.bucket_name,
-                "size": len(content_bytes)
+                "bucket": self.config.bucket,
+                "size": len(content.encode('utf-8'))
             }
             
         except Exception as e:
@@ -167,24 +146,12 @@ class R2Storage(StorageProvider):
     
     def exists(self, key: str) -> bool:
         """Check if object exists in R2"""
-        try:
-            self.client.head_object(
-                Bucket=self.config.bucket_name,
-                Key=key
-            )
-            return True
-        except ClientError as e:
-            if e.response.get('Error', {}).get('Code') == '404':
-                return False
-            raise
+        return self.client.exists(key)
     
     def delete(self, key: str) -> Dict[str, Any]:
         """Delete object from R2"""
         try:
-            self.client.delete_object(
-                Bucket=self.config.bucket_name,
-                Key=key
-            )
+            self.client.delete(key)
             
             self._log_info(f"Object deleted from R2: {key}")
             
@@ -202,50 +169,6 @@ class R2Storage(StorageProvider):
                 "error": error_msg,
                 "key": key
             }
-    
-    def _create_client(self):
-        """Create S3 client for R2"""
-        try:
-            endpoint_url = f"https://{self.config.account_id}.r2.cloudflarestorage.com"
-            
-            r2_config = Config(
-                region_name='auto',
-                signature_version='s3v4',
-                s3={'addressing_style': 'path'},
-                retries={'max_attempts': 3, 'mode': 'adaptive'}
-            )
-            
-            client = boto3.client(
-                's3',
-                endpoint_url=endpoint_url,
-                aws_access_key_id=self.config.access_key_id,
-                aws_secret_access_key=self.config.secret_access_key,
-                region_name='auto',
-                config=r2_config
-            )
-            
-            # Test connection
-            client.head_bucket(Bucket=self.config.bucket_name)
-            
-            return client
-            
-        except NoCredentialsError:
-            raise ValueError("R2 credentials are invalid or missing")
-        except ClientError as e:
-            error_code = e.response.get('Error', {}).get('Code', '')
-            if error_code == '404':
-                raise ValueError(f"R2 bucket '{self.config.bucket_name}' does not exist")
-            elif error_code == '403':
-                raise ValueError("R2 access denied, check credentials and permissions")
-            else:
-                raise ValueError(f"R2 connection failed: {e}")
-    
-    def _get_file_url(self, key: str) -> str:
-        """Build file access URL"""
-        if self.config.custom_domain:
-            return f"https://{self.config.custom_domain}/{key}"
-        else:
-            return f"https://{self.config.bucket_name}.{self.config.account_id}.r2.cloudflarestorage.com/{key}"
     
     def _log_info(self, message: str) -> None:
         """Log info message if logger available"""
@@ -272,9 +195,9 @@ class StorageFactory:
         return LocalFileStorage(base_path, logger)
     
     @staticmethod
-    def create_r2_storage(config: Optional[R2Configuration] = None,
+    def create_r2_storage(config: Optional[R2Config] = None,
                          logger: Optional[Logger] = None) -> R2Storage:
         """Create R2 storage provider"""
         if config is None:
-            config = R2Configuration.from_env()
+            config = R2Config()
         return R2Storage(config, logger)

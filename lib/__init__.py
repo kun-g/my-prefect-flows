@@ -18,7 +18,7 @@ from .interfaces import (
 # Configuration management
 from .config import (
     ConfigurationManager,
-    R2Configuration,
+    R2Config,
     RSSConfiguration,
     FilterConfiguration
 )
@@ -44,7 +44,7 @@ __all__ = [
     
     # Configuration
     'ConfigurationManager',
-    'R2Configuration', 
+    'R2Config', 
     'RSSConfiguration',
     'FilterConfiguration',
     

@@ -15,33 +15,8 @@ except ImportError:
     pass
 
 
-@dataclass
-class R2Configuration:
-    """Configuration for Cloudflare R2 storage"""
-    account_id: str
-    access_key_id: str
-    secret_access_key: str
-    bucket_name: str
-    region: str = "auto"
-    custom_domain: Optional[str] = None
-    
-    @classmethod
-    def from_env(cls) -> "R2Configuration":
-        """Create configuration from environment variables"""
-        return cls(
-            account_id=os.getenv("R2_ACCOUNT_ID", ""),
-            access_key_id=os.getenv("R2_ACCESS_KEY_ID", ""),
-            secret_access_key=os.getenv("R2_SECRET_ACCESS_KEY", ""),
-            bucket_name=os.getenv("R2_BUCKET_NAME", ""),
-            region=os.getenv("R2_REGION", "auto"),
-            custom_domain=os.getenv("R2_CUSTOM_DOMAIN")
-        )
-    
-    def validate(self) -> bool:
-        """Validate that all required fields are present"""
-        required_fields = [self.account_id, self.access_key_id, 
-                          self.secret_access_key, self.bucket_name]
-        return all(field.strip() for field in required_fields)
+# Re-export R2 configuration from the main r2 module for consistency
+from .r2 import R2Config
 
 
 @dataclass 
@@ -101,9 +76,9 @@ class ConfigurationManager:
     def __init__(self, provider: ConfigurationProvider):
         self.provider = provider
     
-    def get_r2_config(self) -> R2Configuration:
+    def get_r2_config(self) -> R2Config:
         """Get R2 configuration"""
-        return R2Configuration.from_env()
+        return R2Config()
     
     def get_rss_config(self, title: str, link: str, description: str, 
                       language: str = "zh-CN", ttl: int = 60) -> RSSConfiguration:
