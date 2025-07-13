@@ -1,24 +1,18 @@
 from prefect import flow, task
 from datetime import datetime
 from typing import List, Dict, Optional
-import json
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
-
-# 自动加载 .env 文件
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+from dotenv import load_dotenv
+load_dotenv()
 
 from lib.sitemap import fetch_sitemap, SitemapEntry
 from lib.rss_generator import (
     RSSChannel, RSSItem, generate_rss_feed, 
     create_rss_item_from_sitemap_entry
 )
-from lib.r2 import create_r2_uploader, R2Config
+from lib.r2 import R2Client, R2Config
 
 
 @task(log_prints=True)
@@ -175,18 +169,10 @@ def upload_rss_to_r2(
         raise ValueError("必须提供 content 或 file_path 其中一个参数，不能同时提供或都不提供")
     
     try:
-        # 创建 R2 配置
-        if r2_config:
-            config = R2Config(**r2_config)
-        else:
-            config = R2Config()
-        
-        # 创建上传器
-        uploader = create_r2_uploader(config)
-        
-        # 根据参数选择上传方式
+        config = R2Config(**r2_config if r2_config else {})
+        uploader = R2Client(config)
+
         if content is not None:
-            # 上传字符串内容
             uploader.upload_string(
                 content=content,
                 key=object_key,
@@ -195,7 +181,6 @@ def upload_rss_to_r2(
             upload_type = "内容"
             result = {"success": True, "file_url": uploader.get_url(object_key)}
         else:
-            # 上传文件
             uploader.upload(
                 local_path=file_path,
                 key=object_key,

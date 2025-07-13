@@ -1,21 +1,14 @@
 """
 Minimal Cloudflare R2 client
-依赖：pip install boto3 python-dotenv (可选)
+依赖：pip install boto3 python-dotenv
 """
 from __future__ import annotations
-import os, typing as t
-from dataclasses import dataclass
-import boto3
+import os, boto3
 from botocore.exceptions import ClientError
-
-try:        # 可选：自动加载 .env
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+from dotenv import load_dotenv
+load_dotenv()
 
 
-@dataclass(frozen=True)
 class R2Config:
     account_id: str = os.getenv("R2_ACCOUNT_ID", "")
     access_key: str = os.getenv("R2_ACCESS_KEY_ID", "")
@@ -88,11 +81,3 @@ class R2Client:
             return f"https://{self._domain}/{key}"
         else:
             return f"https://{self._bucket}.{self._cli._endpoint.host.split('.')[0]}.r2.cloudflarestorage.com/{key}"
-
-
-# ------ 兼容性别名 ------
-R2Uploader = R2Client  # 保持向后兼容
-
-def create_r2_uploader(config: R2Config | None = None) -> R2Client:
-    """兼容函数：创建 R2 客户端实例"""
-    return R2Client(config or R2Config())
