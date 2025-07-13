@@ -77,14 +77,14 @@ class R2Uploader:
 - **参数**: 本地文件路径、对象键、R2 配置
 - **返回**: 上传结果字典
 
-#### 新增 Flow
+#### 统一的 Flow
 
-##### sitemap_to_rss_with_r2_flow
-- **功能**: 完整的 sitemap → RSS → R2 流程
+##### sitemap_to_rss_flow
+- **功能**: 完整的 sitemap → RSS 流程，支持可选的 R2 上传
 - **特性**: 
-  - 支持两种上传模式
+  - 通过 `r2_object_key` 参数控制是否上传到 R2
+  - 支持两种上传模式（直接上传或文件上传）
   - 包含详细的执行状态反馈
-  - 保持向后兼容性
 
 ## 配置说明
 
@@ -144,14 +144,15 @@ result = sitemap_to_rss_flow(
     },
     output_file="output/example.xml",
     max_items=50
+    # 不提供 r2_object_key，只保存本地文件
 )
 ```
 
 #### 2. 生成并上传到 R2
 ```python
-from flows.sitemap_to_rss import sitemap_to_rss_with_r2_flow
+from flows.sitemap_to_rss import sitemap_to_rss_flow
 
-result = sitemap_to_rss_with_r2_flow(
+result = sitemap_to_rss_flow(
     sitemap_url="https://example.com/sitemap.xml",
     channel_config={
         "title": "Example Site Updates",
@@ -159,34 +160,53 @@ result = sitemap_to_rss_with_r2_flow(
         "description": "Latest updates",
         "language": "zh-CN"
     },
-    r2_object_key="feeds/example-site.xml",
+    output_file="output/example.xml",
+    r2_object_key="feeds/example-site.xml",  # 提供此参数即自动上传到 R2
     upload_method="direct"  # 或 "file"
 )
 ```
 
 ### 高级使用
 
-#### 批量处理多个网站
-```python
-from flows.sitemap_to_rss import SAMPLE_CONFIGS, sitemap_to_rss_with_r2_flow
+#### 使用配置文件管理多个网站
 
-for name, config in SAMPLE_CONFIGS.items():
-    result = sitemap_to_rss_with_r2_flow(
-        sitemap_url=config["sitemap_url"],
-        channel_config=config["channel_config"],
-        r2_object_key=config["r2_object_key"],
-        filter_config=config["filter_config"],
-        max_items=30
-    )
-    print(f"{name}: {result['r2_upload']['file_url']}")
+编辑 `deployments/sites_rss_config.yaml` 添加网站配置：
+
+```yaml
+sites:
+  example-site:
+    enabled: true
+    sitemap_url: "https://example.com/sitemap.xml"
+    schedule: "0 */6 * * *"
+    channel_config:
+      title: "Example Site Updates"
+      link: "https://example.com"
+      description: "Latest updates"
+      language: "zh-CN"
+    filter_config:
+      include_patterns: ["/blog/"]
+      max_items: 30
+    options:
+      fetch_titles: true
+      upload_method: "direct"
+    output:
+      local_file: "output/example.xml"
+      r2_object_key: "feeds/example.xml"
 ```
 
-#### 定时任务部署
-```python
-from flows.sitemap_to_rss import deploy_rss_feeds_with_r2
+#### 批量部署和管理
+```bash
+# 查看配置的网站
+python deployments/deploy_rss_feeds.py list
 
-# 部署所有预配置网站的定时任务（每6小时执行）
-deploy_rss_feeds_with_r2()
+# 部署所有网站（带 R2 上传）
+python deployments/deploy_rss_feeds.py deploy
+
+# 部署单个网站
+python deployments/deploy_rss_feeds.py deploy --site example-site
+
+# 仅本地部署（不上传到 R2）
+python deployments/deploy_rss_feeds.py deploy-local
 ```
 
 ## URL 生成策略

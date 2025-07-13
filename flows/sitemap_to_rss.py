@@ -203,10 +203,13 @@ def sitemap_to_rss_flow(
     filter_config: Optional[Dict] = None,
     fetch_titles: bool = False,
     max_items: int = 50,
-    sort_by_date: bool = True
+    sort_by_date: bool = True,
+    r2_object_key: Optional[str] = None,
+    r2_config: Optional[Dict] = None,
+    upload_method: str = "direct"
 ):
     """
-    完整的 sitemap 到 RSS 转换流程
+    完整的 sitemap 到 RSS 转换流程，支持可选的 R2 上传
     
     Args:
         sitemap_url: sitemap URL
@@ -216,77 +219,13 @@ def sitemap_to_rss_flow(
         fetch_titles: 是否获取页面标题
         max_items: 最大条目数
         sort_by_date: 是否按日期排序
-    """
-    print(f"开始 sitemap 到 RSS 转换流程: {sitemap_url}")
-    
-    # 步骤 1: 获取 sitemap
-    sitemap_entries = fetch_sitemap(sitemap_url)
-    
-    if not sitemap_entries:
-        print("未找到 sitemap 条目，退出流程")
-        return None
-    
-    # 步骤 2: 应用过滤器
-    if filter_config:
-        # 确保最大条目数限制
-        if max_items and "max_items" not in filter_config:
-            filter_config["max_items"] = max_items
-        sitemap_entries = apply_rss_filters(sitemap_entries, filter_config)
-    else:
-        # 如果没有过滤器，至少应用最大条目数限制
-        sitemap_entries = sitemap_entries[:max_items]
-    
-    if not sitemap_entries:
-        print("过滤后无条目，退出流程")
-        return None
-    
-    # 步骤 3: 按日期排序
-    if sort_by_date:
-        sitemap_entries = sort_entries_by_date(sitemap_entries)
-    
-    # 步骤 4: 创建 RSS 条目
-    rss_items = create_rss_items(sitemap_entries, fetch_titles)
-    
-    # 步骤 5: 生成并保存 RSS XML
-    output_path = generate_rss_xml(rss_items, channel_config, output_file)
-    
-    print(f"RSS 生成流程完成! 文件保存到: {output_path}")
-    return {
-        "output_file": output_path,
-        "total_items": len(rss_items),
-        "channel_title": channel_config.get("title", "Site Updates")
-    }
-
-
-@flow(name="Sitemap to RSS with R2 Upload")
-def sitemap_to_rss_with_r2_flow(
-    sitemap_url: str,
-    channel_config: Dict,
-    r2_object_key: str,
-    output_file: str = "rss_feed.xml",
-    filter_config: Optional[Dict] = None,
-    fetch_titles: bool = False,
-    max_items: int = 50,
-    sort_by_date: bool = True,
-    r2_config: Optional[Dict] = None,
-    upload_method: str = "direct"
-):
-    """
-    完整的 sitemap 到 RSS 转换并上传到 R2 的流程
-    
-    Args:
-        sitemap_url: sitemap URL
-        channel_config: RSS 频道配置
-        r2_object_key: R2 存储的对象键（文件名）
-        output_file: 本地输出文件路径
-        filter_config: 过滤器配置
-        fetch_titles: 是否获取页面标题
-        max_items: 最大条目数
-        sort_by_date: 是否按日期排序
+        r2_object_key: R2 存储的对象键（文件名），提供此参数则自动上传到 R2
         r2_config: R2 配置字典
         upload_method: 上传方式 ("direct" 直接上传内容, "file" 上传文件)
     """
-    print(f"开始 sitemap 到 RSS 转换并上传到 R2 的流程: {sitemap_url}")
+    upload_to_r2 = r2_object_key is not None
+    action_desc = "并上传到 R2" if upload_to_r2 else ""
+    print(f"开始 sitemap 到 RSS 转换{action_desc}流程: {sitemap_url}")
     
     # 步骤 1: 获取 sitemap
     sitemap_entries = fetch_sitemap(sitemap_url)
@@ -326,33 +265,42 @@ def sitemap_to_rss_with_r2_flow(
     )
     rss_xml_content = generate_rss_feed(channel, rss_items)
     
-    # 步骤 6: 上传到 R2
-    upload_result = None
-    if upload_method == "direct":
-        # 直接上传 RSS 内容
-        upload_result = upload_rss_to_r2(r2_object_key, content=rss_xml_content, r2_config=r2_config)
-    else:
-        # 先保存到本地文件，然后上传文件
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(rss_xml_content)
-        print(f"RSS feed 已保存到本地: {output_file}")
-        
-        upload_result = upload_rss_to_r2(r2_object_key, file_path=output_file, r2_config=r2_config)
-    
-    # 构建最终结果
+    # 构建基础结果
     result = {
         "rss_generation": {
             "output_file": output_file,
             "total_items": len(rss_items),
             "channel_title": channel_config.get("title", "Site Updates")
-        },
-        "r2_upload": upload_result
+        }
     }
     
-    if upload_result and upload_result.get("success"):
-        print(f"RSS 生成并上传到 R2 流程完成! 访问URL: {upload_result.get('file_url')}")
+    # 步骤 6: 处理输出
+    if upload_to_r2:
+        # 上传到 R2
+        upload_result = None
+        if upload_method == "direct":
+            # 直接上传 RSS 内容
+            upload_result = upload_rss_to_r2(r2_object_key, content=rss_xml_content, r2_config=r2_config)
+        else:
+            # 先保存到本地文件，然后上传文件
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(rss_xml_content)
+            print(f"RSS feed 已保存到本地: {output_file}")
+            
+            upload_result = upload_rss_to_r2(r2_object_key, file_path=output_file, r2_config=r2_config)
+        
+        # 添加上传结果
+        result["r2_upload"] = upload_result
+        
+        if upload_result and upload_result.get("success"):
+            print(f"RSS 生成并上传到 R2 流程完成! 访问URL: {upload_result.get('file_url')}")
+        else:
+            print(f"RSS 生成完成，但上传到 R2 失败: {upload_result.get('error', 'Unknown error') if upload_result else 'No upload result'}")
     else:
-        print(f"RSS 生成完成，但上传到 R2 失败: {upload_result.get('error', 'Unknown error') if upload_result else 'No upload result'}")
+        # 仅保存到本地文件
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(rss_xml_content)
+        print(f"RSS 生成流程完成! 文件保存到: {output_file}")
     
     return result
 
@@ -373,8 +321,8 @@ if __name__ == "__main__":
             "exclude_patterns": ["/blog/tags/", "/blog/page/"],
             "max_items": 5
         },
-        "output_file": "test_output.xml",
-        "r2_object_key": "test/prefect-blog.xml"
+        "output_file": "output/prefect-blog.xml",
+        "r2_object_key": "feeds/prefect-blog.xml"
     }
     
     print("测试 RSS 生成流程...")

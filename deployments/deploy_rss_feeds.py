@@ -7,7 +7,7 @@ RSS Feed 部署脚本
 import sys
 import yaml
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 # 添加项目根目录到路径
 project_root = Path(__file__).parent.parent
@@ -16,7 +16,7 @@ sys.path.append(str(project_root))
 from dotenv import load_dotenv
 load_dotenv()
 
-from flows.sitemap_to_rss import sitemap_to_rss_with_r2_flow, sitemap_to_rss_flow
+from flows.sitemap_to_rss import sitemap_to_rss_flow
 
 
 def load_sites_config(config_path: str = "deployments/sites_rss_config.yaml") -> Dict[str, Any]:
@@ -69,31 +69,27 @@ def deploy_single_site(site_name: str, site_config: Dict[str, Any], use_r2: bool
         deploy_params = {
             "sitemap_url": site_config["sitemap_url"],
             "channel_config": site_config["channel_config"],
+            "output_file": site_config["output"]["local_file"],
             "filter_config": site_config.get("filter_config"),
             "fetch_titles": site_config["options"].get("fetch_titles", True),
             "max_items": site_config["options"].get("max_items", 30),
             "sort_by_date": site_config["options"].get("sort_by_date", True),
         }
         
-        # 选择流程类型和特定参数
+        # 添加 R2 特定参数
         if use_r2:
-            flow = sitemap_to_rss_with_r2_flow
             deploy_params.update({
                 "r2_object_key": site_config["output"]["r2_object_key"],
-                "output_file": site_config["output"]["local_file"],
                 "upload_method": site_config["options"].get("upload_method", "direct"),
                 "r2_config": None  # 使用环境变量配置
             })
             deployment_name = f"rss-r2-{site_name}"
         else:
-            flow = sitemap_to_rss_flow
-            deploy_params.update({
-                "output_file": site_config["output"]["local_file"]
-            })
+            # 本地模式不设置 r2_object_key，这样就不会上传到 R2
             deployment_name = f"rss-{site_name}"
         
         # 创建部署
-        deployment = flow.serve(
+        sitemap_to_rss_flow.serve(
             name=deployment_name,
             cron=site_config["schedule"],
             parameters=deploy_params,

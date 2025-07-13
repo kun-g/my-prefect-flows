@@ -116,48 +116,42 @@ python flows/sitemap_to_rss.py
 
 ### 5.1 添加新网站
 
-编辑 `flows/sitemap_to_rss.py` 中的 `SAMPLE_CONFIGS`：
+编辑 `deployments/sites_rss_config.yaml` 添加新网站：
 
-```python
-SAMPLE_CONFIGS = {
-    # 现有配置...
-    
-    "my-website": {
-        "sitemap_url": "https://mywebsite.com/sitemap.xml",
-        "channel_config": {
-            "title": "我的网站更新",
-            "link": "https://mywebsite.com",
-            "description": "最新文章和更新",
-            "language": "zh-CN"
-        },
-        "filter_config": {
-            "include_patterns": ["/posts/", "/articles/"],
-            "exclude_patterns": ["/tags/"],
-            "max_items": 20
-        },
-        "output_file": "output/my-website-rss.xml",
-        "r2_object_key": "feeds/my-website.xml"
-    }
-}
+```yaml
+sites:
+  # 现有配置...
+  
+  my-website:
+    enabled: true
+    sitemap_url: "https://mywebsite.com/sitemap.xml"
+    schedule: "0 */6 * * *"
+    channel_config:
+      title: "我的网站更新"
+      link: "https://mywebsite.com"
+      description: "最新文章和更新"
+      language: "zh-CN"
+    filter_config:
+      include_patterns: ["/posts/", "/articles/"]
+      exclude_patterns: ["/tags/"]
+      max_items: 20
+    options:
+      fetch_titles: true
+      sort_by_date: true
+      upload_method: "direct"
+    output:
+      local_file: "output/my-website-rss.xml"
+      r2_object_key: "feeds/my-website.xml"
 ```
 
-### 5.2 运行自定义配置
+### 5.2 部署新网站
 
-```python
-from flows.sitemap_to_rss import sitemap_to_rss_with_r2_flow, SAMPLE_CONFIGS
+```bash
+# 部署单个网站
+python deployments/deploy_rss_feeds.py deploy --site my-website
 
-config = SAMPLE_CONFIGS["my-website"]
-
-result = sitemap_to_rss_with_r2_flow(
-    sitemap_url=config["sitemap_url"],
-    channel_config=config["channel_config"],
-    r2_object_key=config["r2_object_key"],
-    filter_config=config["filter_config"],
-    max_items=20,
-    upload_method="direct"
-)
-
-print(f"RSS URL: {result['r2_upload']['file_url']}")
+# 或部署所有网站
+python deployments/deploy_rss_feeds.py deploy
 ```
 
 ## 常见用法
@@ -176,22 +170,24 @@ result = sitemap_to_rss_flow(
     },
     output_file="my-feed.xml",
     max_items=10
+    # 不提供 r2_object_key，只保存本地文件
 )
 ```
 
 ### 生成并上传到 R2
 
 ```python
-from flows.sitemap_to_rss import sitemap_to_rss_with_r2_flow
+from flows.sitemap_to_rss import sitemap_to_rss_flow
 
-result = sitemap_to_rss_with_r2_flow(
+result = sitemap_to_rss_flow(
     sitemap_url="https://example.com/sitemap.xml",
     channel_config={
         "title": "示例网站",
         "link": "https://example.com", 
         "description": "最新更新"
     },
-    r2_object_key="feeds/example.xml",
+    output_file="my-feed.xml",
+    r2_object_key="feeds/example.xml",  # 提供此参数即自动上传到 R2
     max_items=10
 )
 
@@ -199,40 +195,41 @@ if result["r2_upload"]["success"]:
     print(f"RSS 已上传: {result['r2_upload']['file_url']}")
 ```
 
-### 批量处理多个网站
+### 批量管理多个网站
 
-```python
-from flows.sitemap_to_rss import SAMPLE_CONFIGS, sitemap_to_rss_with_r2_flow
+```bash
+# 查看配置的网站
+python deployments/deploy_rss_feeds.py list
 
-for name, config in SAMPLE_CONFIGS.items():
-    print(f"处理 {name}...")
-    result = sitemap_to_rss_with_r2_flow(**config)
-    
-    if result and result["r2_upload"]["success"]:
-        print(f"✅ {name}: {result['r2_upload']['file_url']}")
-    else:
-        print(f"❌ {name}: 处理失败")
+# 部署所有网站
+python deployments/deploy_rss_feeds.py deploy
+
+# 部署指定网站
+python deployments/deploy_rss_feeds.py deploy --site prefect
 ```
 
 ## 定时任务设置
 
-使用 Prefect 设置定时任务：
+使用部署脚本设置定时任务：
 
 ```bash
-# 部署流程
-uv run prefect deployment build flows/sitemap_to_rss.py:sitemap_to_rss_with_r2_flow -p local-process
+# 部署所有网站（带 R2 上传）
+python deployments/deploy_rss_feeds.py deploy
 
-# 启动工作进程
-uv run prefect worker start --pool local-process
+# 部署所有网站（仅本地保存）
+python deployments/deploy_rss_feeds.py deploy-local
+
+# 启动 Prefect 工作进程
+uv run prefect worker start --pool default
 ```
 
-或使用 Python 代码：
+配置文件中的 `schedule` 字段控制执行频率：
 
-```python
-from flows.sitemap_to_rss import deploy_rss_feeds_with_r2
-
-# 部署所有预配置网站的定时任务（每6小时）
-deploy_rss_feeds_with_r2()
+```yaml
+sites:
+  my-site:
+    schedule: "0 */6 * * *"  # 每6小时执行一次
+    # ... 其他配置
 ```
 
 ## 故障排除
