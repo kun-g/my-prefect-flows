@@ -36,4 +36,5 @@ ENV VIRTUAL_ENV="/app/.venv"
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV PYTHONPATH="/app:$PYTHONPATH"
 
-CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
+CMD ["tail", "-f", "README.md"]
+# CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
