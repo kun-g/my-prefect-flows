@@ -35,7 +35,7 @@ services:
     depends_on:
       prefect:
         condition: service_healthy
-    command: ["/app/.venv/bin/prefect", "worker", "start", "-p", "local-process", "--type", "process"]
+    command: ["prefect", "worker", "start", "-p", "local-process", "--type", "process"]
     environment:
       - PREFECT_API_URL=http://prefect:4200/api
       - PREFECT_LOGGING_LEVEL=INFO

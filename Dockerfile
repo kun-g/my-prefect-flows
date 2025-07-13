@@ -16,7 +16,8 @@ RUN pip install uv
 # 复制项目配置文件
 COPY pyproject.toml uv.lock ./
 
-# 使用 uv 安装依赖
+# 创建虚拟环境并安装依赖
+RUN uv venv /app/.venv
 RUN uv sync --frozen
 
 # 复制项目代码
@@ -33,4 +34,4 @@ RUN chown -R prefect:prefect /app
 USER prefect
 
 # 默认命令（可以通过 docker-compose 覆盖）
-CMD ["/app/.venv/bin/prefect", "worker", "start", "--type", "process"]
+CMD ["prefect", "worker", "start", "--type", "process"]
