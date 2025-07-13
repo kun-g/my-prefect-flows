@@ -17,7 +17,7 @@ RUN chown -R prefect:prefect /app
 
 USER prefect
 
-RUN pip install uv
+RUN pip install uv -U
 
 COPY --chown=prefect:prefect . /app
 
