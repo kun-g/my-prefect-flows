@@ -10,8 +10,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 uv（在切换用户之前）
-RUN pip install uv -U
+RUN pip install uv --root-user-action
 
 # 创建非 root 用户
 RUN useradd --create-home --shell /bin/bash prefect
@@ -32,6 +31,6 @@ RUN uv sync --frozen
 RUN ls -la
 # RUN which uv 
 
-CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
+CMD uv run prefect worker start -p "$WORKER_POOL_NAME" --type process
 # CMD ["tail", "-f", "README.md"]
 # CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
