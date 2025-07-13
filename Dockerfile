@@ -13,18 +13,15 @@ RUN apt-get update && apt-get install -y \
 # 创建非 root 用户
 RUN useradd --create-home --shell /bin/bash prefect
 
-# RUN mkdir -p /workspace
-# RUN pwd
+RUN chown -R prefect:prefect /app
 
-# RUN chown -R prefect:prefect /workspace
+USER prefect
 
-# USER prefect
+RUN pip install uv
 
-# RUN pip install uv
+COPY --chown=prefect:prefect . /app
 
-# COPY --chown=prefect:prefect /app /workspace
-
-# RUN uv sync --frozen
+RUN uv sync --frozen
 
 # 设置环境变量 - 确保虚拟环境的 bin 目录在 PATH 中
 # ENV VIRTUAL_ENV="/app/.venv"

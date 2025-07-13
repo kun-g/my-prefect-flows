@@ -39,8 +39,6 @@ services:
       - PREFECT_API_URL=http://prefect:4200/api
       - PREFECT_LOGGING_LEVEL=INFO
       - WORKER_POOL_NAME=local-process
-    volumes:
-      - .:/app
     restart: unless-stopped
     networks: [prefect-net]
 
