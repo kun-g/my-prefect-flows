@@ -1,0 +1,14 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting beautifulsoup4
+  Downloading beautifulsoup4-4.13.4-py3-none-any.whl.metadata
+     - 3.8 kB ? 0:00:00
+Collecting soupsieve>1.2 (from beautifulsoup4)
+  Downloading soupsieve-2.7-py3-none-any.whl.metadata
+     - 4.6 kB ? 0:00:00
+Requirement already satisfied: typing-extensions>=4.0.0 in /usr/lib/python3/dist-packages (from beautifulsoup4) (4.10.0)
+Downloading beautifulsoup4-4.13.4-py3-none-any.whl
+   - 187.3 kB 89.6 MB/s 0:00:00
+Downloading soupsieve-2.7-py3-none-any.whl
+   - 36.7 kB 189.4 MB/s 0:00:00
+Installing collected packages: soupsieve, beautifulsoup4
+Successfully installed beautifulsoup4-4.13.4 soupsieve-2.7

@@ -1,152 +1,137 @@
-# RSS Content Enhancement Guide
+# RSS 内容增强指南
 
-This guide explains the new RSS content extraction and "Read More..." link features implemented for the RSS feed generation system.
+本指南说明了为 RSS 订阅源生成系统实现的新内容提取和"阅读更多..."链接功能。
 
-## What's New
+## 新增功能
 
-### 🔗 Read More Links
-Every RSS item now includes a "Read More..." link that directs readers to the original article on your website. This helps drive traffic back to your site while providing content previews in RSS readers.
+### 🔗 阅读更多链接
+每个 RSS 条目现在都包含一个"阅读更多..."链接，引导读者访问您网站上的原始文章。这有助于为您的网站导流，同时在 RSS 阅读器中提供内容预览。
 
-### 📄 Content Extraction
-Instead of just using meta descriptions, the system can now extract actual content from article pages to provide richer RSS feeds with meaningful excerpts.
+### 📄 内容提取
+系统现在可以从文章页面提取实际内容，而不仅仅是使用元描述，为 RSS 订阅源提供更丰富的内容摘录。
 
-### 🎨 HTML Support
-RSS descriptions now properly support HTML formatting with CDATA sections, allowing for rich content display in modern RSS readers.
+### 🎨 HTML 支持
+RSS 描述现在通过 CDATA 部分正确支持 HTML 格式，允许在现代 RSS 阅读器中显示丰富的内容。
 
-## Configuration
+## 配置
 
-### Enabling Content Extraction
+### 启用内容提取
 
-To enable content extraction for a specific site, update your `deployments/sites_rss_config.yaml`:
+内容提取功能默认已启用（`extract_content: true`）。您无需修改配置文件，系统将自动提取所有可用的文章内容。
 
-```yaml
-sites:
-  example_site:
-    enabled: true
-    sitemap_url: "https://example.com/sitemap.xml"
-    options:
-      fetch_titles: true
-      extract_content: true    # Enable content extraction
-      content_length: 500      # Extract up to 500 characters
-    # ... other config
-```
+### 配置选项
 
-### Configuration Options
+- `extract_content`: 设置为 `true` 启用内容提取（默认值：`true`）
+- `fetch_titles`: 是否获取页面标题（现有功能）
 
-- `extract_content`: Set to `true` to enable content extraction (default: `false`)
-- `content_length`: Maximum number of characters to extract (default: `500`)
-- `fetch_titles`: Whether to fetch page titles (existing feature)
+## 工作原理
 
-## How It Works
+### 内容提取过程
 
-### Content Extraction Process
-
-1. **Page Fetching**: Downloads the HTML content from each URL
-2. **Content Detection**: Identifies main content areas using semantic selectors:
-   - `<article>` elements
+1. **页面获取**: 从每个 URL 下载 HTML 内容
+2. **内容检测**: 使用语义选择器识别主要内容区域：
+   - `<article>` 元素
    - `[role="main"]` 
-   - `.content`, `.main-content`, `.post-content` classes
-   - Falls back to `<main>` or `<body>`
-3. **Content Filtering**: Removes unwanted elements:
-   - Navigation, headers, footers
-   - Sidebars and advertisements  
-   - Scripts and styles
-4. **Text Extraction**: Extracts paragraph content up to the specified length
-5. **Link Addition**: Appends "Read More..." link to original URL
+   - `.content`, `.main-content`, `.post-content` 类
+   - 回退到 `<main>` 或 `<body>`
+3. **内容过滤**: 移除不需要的元素：
+   - 导航、页眉、页脚
+   - 侧边栏和广告  
+   - 脚本和样式
+4. **文本提取**: 提取所有段落内容
+5. **链接添加**: 在末尾添加"阅读更多..."链接到原始 URL
 
-### Fallback Behavior
+### 后备行为
 
-If content extraction fails or no suitable content is found:
-- Falls back to meta description
-- If no meta description exists, creates a simple "Read More..." link
-- Ensures every RSS item has some description content
+如果内容提取失败或找不到合适的内容：
+- 回退到元描述
+- 如果没有元描述，创建简单的"阅读更多..."链接
+- 确保每个 RSS 条目都有一些描述内容
 
-## Examples
+## 示例
 
-### Before (Meta Description Only)
+### 之前（仅元描述）
 ```xml
-<description>Brief meta description of the article.</description>
+<description>文章的简短元描述。</description>
 ```
 
-### After (With Content Extraction)
+### 之后（使用内容提取）
 ```xml
 <description><![CDATA[
-<p>This article discusses the importance of RSS feeds in modern content distribution. RSS provides a standardized way for users to subscribe to website updates and receive notifications when new content is published.</p>
+<p>本文讨论了 RSS 订阅源在现代内容分发中的重要性。RSS 为用户提供了订阅网站更新的标准化方式，并在发布新内容时接收通知。</p>
 
-<p>The format has evolved over the years to support richer content, including HTML formatting and multimedia elements...</p>
+<p>该格式多年来不断发展，支持更丰富的内容，包括 HTML 格式和多媒体元素...</p>
 
-<p><a href="https://example.com/article">Read More...</a></p>
+<p><a href="https://example.com/article">阅读更多...</a></p>
 ]]></description>
 ```
 
-## Benefits
+## 优势
 
-### For Content Creators
-- ✅ Drives traffic back to original website
-- ✅ Provides content previews without giving away full articles
-- ✅ Maintains SEO value of original content
-- ✅ Respects copyright while improving RSS experience
+### 对内容创作者
+- ✅ 为原网站导流
+- ✅ 提供内容预览而不泄露完整文章
+- ✅ 保持原内容的 SEO 价值
+- ✅ 在改善 RSS 体验的同时尊重版权
 
-### For RSS Readers
-- ✅ More informative content previews
-- ✅ Better decision-making about which articles to read
-- ✅ Improved reading experience in RSS clients
-- ✅ Clear path to full articles
+### 对 RSS 读者
+- ✅ 更丰富的内容预览
+- ✅ 更好地决定要阅读哪些文章
+- ✅ 改善 RSS 客户端中的阅读体验
+- ✅ 清晰的完整文章访问路径
 
-## Backward Compatibility
+## 向后兼容性
 
-The new features are fully backward compatible:
-- Sites with `extract_content: false` work exactly as before
-- Existing RSS feeds continue to function normally
-- No breaking changes to RSS structure or deployment process
+新功能完全向后兼容：
+- 现有 RSS 订阅源继续正常运行
+- RSS 结构或部署过程无破坏性更改
+- 内容提取默认启用，但可以禁用
 
-## Best Practices
+## 最佳实践
 
-### Content Length
-- **News sites**: 200-300 characters for quick scanning
-- **Blog posts**: 400-600 characters for meaningful previews  
-- **Technical articles**: 500-800 characters for context
+### 内容长度
+- **新闻网站**: 提取所有可用内容用于快速浏览
+- **博客文章**: 提取所有段落以提供有意义的预览  
+- **技术文章**: 提取完整内容以提供上下文
 
-### Selective Enabling
-Start by enabling content extraction for a few high-priority sites to test the feature before rolling out broadly.
+### 选择性启用
+可以通过在流程调用中设置 `extract_content=False` 来禁用特定站点的内容提取功能。
 
-### Monitoring
-Monitor RSS feed generation logs to ensure content extraction is working properly and adjust `content_length` as needed.
+### 监控
+监控 RSS 订阅源生成日志，确保内容提取正常工作。
 
-## Troubleshooting
+## 故障排除
 
-### Common Issues
+### 常见问题
 
-**Content extraction fails**: 
-- Check if the website blocks automated requests
-- Verify the site structure uses semantic HTML
-- Consider adjusting the content selectors
+**内容提取失败**: 
+- 检查网站是否阻止自动化请求
+- 验证网站结构是否使用语义 HTML
+- 考虑调整内容选择器
 
-**Content quality is poor**:
-- Increase `content_length` for more context
-- Check if the site has unusual HTML structure
-- The system will fall back to meta descriptions
+**内容质量差**:
+- 检查网站是否有特殊的 HTML 结构
+- 系统会回退到元描述
 
-**Performance impact**:
-- Content extraction requires additional HTTP requests
-- Consider reducing `max_items` if feeds take too long to generate
-- Monitor server resources during RSS generation
+**性能影响**:
+- 内容提取需要额外的 HTTP 请求
+- 如果订阅源生成时间过长，考虑减少 `max_items`
+- 在 RSS 生成期间监控服务器资源
 
-### Log Messages
-Look for these log messages to understand what's happening:
-- `"获取页面内容: {url}"` - Starting content extraction
-- `"内容提取失败: {error}"` - Content extraction failed
-- `"创建了 {count} 个 RSS 条目"` - RSS generation completed
+### 日志消息
+查看这些日志消息了解发生的情况：
+- `"获取页面内容: {url}"` - 开始内容提取
+- `"内容提取失败: {error}"` - 内容提取失败
+- `"创建了 {count} 个 RSS 条目"` - RSS 生成完成
 
-## Implementation Details
+## 实现细节
 
-### Files Modified
-- `lib/rss_generator.py`: Enhanced RSS generation with CDATA support
-- `flows/sitemap_to_rss.py`: Added content extraction functionality
-- `deployments/sites_rss_config.yaml`: Updated configuration examples
-- `deployments/deploy_rss_feeds.py`: Added new parameter support
+### 修改的文件
+- `lib/rss_generator.py`: 增强的 RSS 生成，支持 CDATA
+- `flows/sitemap_to_rss.py`: 添加内容提取功能
+- `lib/content_extractor.py`: 新增的内容提取模块
 
-### Dependencies Added
-- `beautifulsoup4`: For HTML parsing and content extraction
+### 添加的依赖
+- `beautifulsoup4`: 用于 HTML 解析和内容提取
 
-This enhancement makes RSS feeds more valuable for both content creators and readers while maintaining the simplicity and reliability of the existing system.
+此增强使 RSS 订阅源对内容创作者和读者都更有价值，同时保持现有系统的简单性和可靠性。

@@ -13,6 +13,7 @@ from lib.rss_generator import (
     create_rss_item_from_sitemap_entry
 )
 from lib.r2 import R2Client, R2Config
+from lib.content_extractor import extract_page_content
 
 
 @task(log_prints=True)
@@ -71,15 +72,14 @@ def sort_entries_by_date(entries: List[SitemapEntry], reverse: bool = True) -> L
 
 
 @task(log_prints=True)
-def create_rss_items(entries: List[SitemapEntry], fetch_titles: bool = False, extract_content: bool = False, content_length: int = 500) -> List[RSSItem]:
+def create_rss_items(entries: List[SitemapEntry], fetch_titles: bool = False, extract_content: bool = True) -> List[RSSItem]:
     """
     从 sitemap 条目创建 RSS 条目
     
     Args:
         entries: sitemap 条目列表
         fetch_titles: 是否获取页面标题
-        extract_content: 是否提取页面内容
-        content_length: 内容提取的最大长度（字符数）
+        extract_content: 是否提取页面内容（默认开启）
     """
     import httpx
     import re
@@ -109,7 +109,7 @@ def create_rss_items(entries: List[SitemapEntry], fetch_titles: bool = False, ex
                 
                 # 提取内容
                 if extract_content:
-                    description = extract_page_content(page_content, entry.url, content_length)
+                    description = extract_page_content(page_content, entry.url)
                 else:
                     # 仅提取描述（meta description）
                     desc_match = re.search(r'<meta[^>]*name=["\']description["\'][^>]*content=["\']([^"\']*)["\']', page_content, re.IGNORECASE)
@@ -126,137 +126,6 @@ def create_rss_items(entries: List[SitemapEntry], fetch_titles: bool = False, ex
     print(f"创建了 {len(rss_items)} 个 RSS 条目")
     return rss_items
 
-
-def extract_page_content(html_content: str, url: str, max_length: int = 500) -> str:
-    """
-    从 HTML 页面提取主要内容并添加 Read More 链接
-    
-    Args:
-        html_content: HTML 页面内容
-        url: 页面 URL
-        max_length: 最大内容长度
-        
-    Returns:
-        包含内容摘录和 Read More 链接的 HTML 字符串
-    """
-    try:
-        from bs4 import BeautifulSoup
-        
-        soup = BeautifulSoup(html_content, 'html.parser')
-        
-        # 移除不需要的元素
-        for element in soup(['script', 'style', 'nav', 'header', 'footer', 'aside', 'meta', 'link']):
-            element.decompose()
-        
-        # 尝试找到主要内容区域
-        content_selectors = [
-            'article',
-            '[role="main"]',
-            '.content',
-            '.main-content', 
-            '.post-content',
-            '.entry-content',
-            '.article-content',
-            'main',
-            '#content',
-            '#main'
-        ]
-        
-        main_content = None
-        for selector in content_selectors:
-            main_content = soup.select_one(selector)
-            if main_content:
-                break
-        
-        # 如果没有找到主要内容区域，使用 body
-        if not main_content:
-            main_content = soup.find('body') or soup
-        
-        # 提取文本内容，专注于段落
-        paragraphs = main_content.find_all('p', recursive=True)
-        
-        # 如果没有足够的段落，也查找其他可能包含内容的元素
-        if len(paragraphs) < 2:
-            additional_elements = main_content.find_all(['div', 'article', 'section'], recursive=True)
-            # 过滤掉明显的非内容元素
-            for elem in additional_elements:
-                elem_text = elem.get_text(strip=True)
-                elem_class = ' '.join(elem.get('class', []))
-                elem_id = elem.get('id', '')
-                
-                # 跳过明显的非内容元素
-                skip_classes = ['sidebar', 'navigation', 'nav', 'menu', 'footer', 'header', 'ad', 'advertisement', 'social']
-                if any(skip_class in elem_class.lower() or skip_class in elem_id.lower() for skip_class in skip_classes):
-                    continue
-                    
-                if len(elem_text) >= 50:  # 只包含有足够文本的元素
-                    paragraphs.append(elem)
-        
-        extracted_paragraphs = []
-        total_length = 0
-        
-        for p in paragraphs:
-            # 跳过空段落或只包含链接的段落
-            text = p.get_text(strip=True)
-            if len(text) < 20:  # 跳过太短的段落
-                continue
-            
-            # 检查是否是不需要的内容
-            p_class = ' '.join(p.get('class', []))
-            p_id = p.get('id', '')
-            skip_classes = ['sidebar', 'navigation', 'nav', 'menu', 'footer', 'header', 'ad', 'advertisement', 'social', 'comment']
-            
-            if any(skip_class in p_class.lower() or skip_class in p_id.lower() for skip_class in skip_classes):
-                continue
-                
-            # 保留段落的 HTML 结构，但清理内容
-            p_copy = BeautifulSoup(str(p), 'html.parser')
-            
-            # 移除嵌套的不需要元素
-            for unwanted in p_copy(['script', 'style', 'nav', 'aside', 'footer', 'header']):
-                unwanted.decompose()
-            
-            # 简化为 <p> 标签以保持一致性
-            paragraph_text = p_copy.get_text(strip=True)
-            paragraph_html = f"<p>{paragraph_text}</p>"
-            
-            if total_length + len(paragraph_text) > max_length:
-                # 截断到最大长度
-                remaining_length = max_length - total_length
-                if remaining_length > 50:  # 至少保留 50 个字符
-                    truncated_text = paragraph_text[:remaining_length] + "..."
-                    paragraph_html = f"<p>{truncated_text}</p>"
-                    extracted_paragraphs.append(paragraph_html)
-                break
-            
-            extracted_paragraphs.append(paragraph_html)
-            total_length += len(paragraph_text)
-            
-            if total_length >= max_length:
-                break
-        
-        # 如果没有提取到有效内容，使用 meta description 作为后备
-        if not extracted_paragraphs:
-            import re
-            desc_match = re.search(r'<meta[^>]*name=["\']description["\'][^>]*content=["\']([^"\']*)["\']', html_content, re.IGNORECASE)
-            if desc_match:
-                meta_desc = desc_match.group(1).strip()
-                if meta_desc:
-                    extracted_paragraphs = [f"<p>{meta_desc}</p>"]
-        
-        # 组合内容和 Read More 链接
-        if extracted_paragraphs:
-            content_html = '\n\n'.join(extracted_paragraphs)
-            read_more_link = f'<p><a href="{url}">Read More...</a></p>'
-            return f"{content_html}\n\n{read_more_link}"
-        else:
-            # 如果没有内容，只返回 Read More 链接
-            return f'<p><a href="{url}">Read More...</a></p>'
-            
-    except Exception as e:
-        print(f"内容提取失败: {e}")
-        # 返回简单的 Read More 链接作为后备
-        return f'<p><a href="{url}">Read More...</a></p>'
 
 
 @task(log_prints=True)
@@ -348,8 +217,7 @@ def sitemap_to_rss_flow(
     output_file: str = "rss_feed.xml",
     filter_config: Optional[Dict] = None,
     fetch_titles: bool = False,
-    extract_content: bool = False,
-    content_length: int = 500,
+    extract_content: bool = True,
     max_items: int = 50,
     sort_by_date: bool = True,
     r2_object_key: Optional[str] = None,
@@ -365,8 +233,7 @@ def sitemap_to_rss_flow(
         output_file: 输出文件路径
         filter_config: 过滤器配置
         fetch_titles: 是否获取页面标题
-        extract_content: 是否提取页面内容
-        content_length: 内容提取的最大长度（字符数）
+        extract_content: 是否提取页面内容（默认开启）
         max_items: 最大条目数
         sort_by_date: 是否按日期排序
         r2_object_key: R2 存储的对象键（文件名），提供此参数则自动上传到 R2
@@ -403,7 +270,7 @@ def sitemap_to_rss_flow(
         sitemap_entries = sort_entries_by_date(sitemap_entries)
     
     # 步骤 4: 创建 RSS 条目
-    rss_items = create_rss_items(sitemap_entries, fetch_titles, extract_content, content_length)
+    rss_items = create_rss_items(sitemap_entries, fetch_titles, extract_content)
     
     # 步骤 5: 生成 RSS XML
     channel = RSSChannel(
@@ -486,8 +353,7 @@ if __name__ == "__main__":
         output_file=test_config["output_file"],
         filter_config=test_config["filter_config"],
         fetch_titles=True,
-        extract_content=True,  # 启用内容提取
-        content_length=400,    # 提取400字符内容
+        extract_content=True,  # 默认已开启内容提取
         max_items=5,
         sort_by_date=True
     )

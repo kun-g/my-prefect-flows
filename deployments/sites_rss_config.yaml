@@ -17,8 +17,6 @@ sites:
       max_items: 20
     options:
       fetch_titles: true
-      extract_content: true  # 启用内容提取
-      content_length: 600   # 提取600字符的内容
       sort_by_date: true
       max_items: 20
       upload_method: "direct"
@@ -64,8 +62,6 @@ sites:
       max_items: 9
     options:
       fetch_titles: true
-      extract_content: true  # 启用内容提取
-      content_length: 500   # 提取500字符的内容
       sort_by_date: true
       max_items: 20
       upload_method: "direct"
@@ -78,8 +74,6 @@ defaults:
   schedule: "0 */6 * * *"
   options:
     fetch_titles: true
-    extract_content: false  # 默认关闭内容提取，可按站点启用
-    content_length: 500     # 默认内容长度
     sort_by_date: true
     max_items: 30
     upload_method: "direct"
