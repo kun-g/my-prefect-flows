@@ -13,6 +13,7 @@ from lib.rss_generator import (
     create_rss_item_from_sitemap_entry
 )
 from lib.r2 import R2Client, R2Config
+from lib.content_extractor import extract_page_content
 
 
 @task(log_prints=True)
@@ -71,36 +72,49 @@ def sort_entries_by_date(entries: List[SitemapEntry], reverse: bool = True) -> L
 
 
 @task(log_prints=True)
-def create_rss_items(entries: List[SitemapEntry], fetch_titles: bool = False) -> List[RSSItem]:
+def create_rss_items(entries: List[SitemapEntry], fetch_titles: bool = False, extract_content: bool = True) -> List[RSSItem]:
     """
     从 sitemap 条目创建 RSS 条目
+    
+    Args:
+        entries: sitemap 条目列表
+        fetch_titles: 是否获取页面标题
+        extract_content: 是否提取页面内容（默认开启）
     """
     import httpx
     import re
+    from bs4 import BeautifulSoup
     
     rss_items = []
     
     for entry in entries:
         title = None
         description = None
+        content = ""
         
-        # 如果需要获取页面标题
-        if fetch_titles:
+        # 如果需要获取页面标题或内容
+        if fetch_titles or extract_content:
             try:
-                print(f"获取页面标题: {entry.url}")
+                print(f"获取页面内容: {entry.url}")
                 response = httpx.get(entry.url, timeout=10)
                 response.raise_for_status()
                 
-                # 提取标题
-                content = response.text
-                title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
-                if title_match:
-                    title = title_match.group(1).strip()
+                page_content = response.text
                 
-                # 提取描述（meta description）
-                desc_match = re.search(r'<meta[^>]*name=["\']description["\'][^>]*content=["\']([^"\']*)["\']', content, re.IGNORECASE)
-                if desc_match:
-                    description = desc_match.group(1).strip()
+                # 提取标题
+                if fetch_titles:
+                    title_match = re.search(r'<title[^>]*>(.*?)</title>', page_content, re.IGNORECASE | re.DOTALL)
+                    if title_match:
+                        title = title_match.group(1).strip()
+                
+                # 提取内容
+                if extract_content:
+                    description = extract_page_content(page_content, entry.url)
+                else:
+                    # 仅提取描述（meta description）
+                    desc_match = re.search(r'<meta[^>]*name=["\']description["\'][^>]*content=["\']([^"\']*)["\']', page_content, re.IGNORECASE)
+                    if desc_match:
+                        description = desc_match.group(1).strip()
                 
             except Exception as e:
                 print(f"获取页面内容失败 {entry.url}: {e}")
@@ -111,6 +125,7 @@ def create_rss_items(entries: List[SitemapEntry], fetch_titles: bool = False) ->
     
     print(f"创建了 {len(rss_items)} 个 RSS 条目")
     return rss_items
+
 
 
 @task(log_prints=True)
@@ -202,6 +217,7 @@ def sitemap_to_rss_flow(
     output_file: str = "rss_feed.xml",
     filter_config: Optional[Dict] = None,
     fetch_titles: bool = False,
+    extract_content: bool = True,
     max_items: int = 50,
     sort_by_date: bool = True,
     r2_object_key: Optional[str] = None,
@@ -217,6 +233,7 @@ def sitemap_to_rss_flow(
         output_file: 输出文件路径
         filter_config: 过滤器配置
         fetch_titles: 是否获取页面标题
+        extract_content: 是否提取页面内容（默认开启）
         max_items: 最大条目数
         sort_by_date: 是否按日期排序
         r2_object_key: R2 存储的对象键（文件名），提供此参数则自动上传到 R2
@@ -253,7 +270,7 @@ def sitemap_to_rss_flow(
         sitemap_entries = sort_entries_by_date(sitemap_entries)
     
     # 步骤 4: 创建 RSS 条目
-    rss_items = create_rss_items(sitemap_entries, fetch_titles)
+    rss_items = create_rss_items(sitemap_entries, fetch_titles, extract_content)
     
     # 步骤 5: 生成 RSS XML
     channel = RSSChannel(
@@ -325,17 +342,18 @@ if __name__ == "__main__":
         "r2_object_key": "feeds/prefect-blog.xml"
     }
     
-    print("测试 RSS 生成流程...")
+    print("测试 RSS 生成流程（包含内容提取和 Read More 链接）...")
     print("如需部署多个网站，请使用: python deployments/deploy_rss_feeds.py")
     print("-" * 50)
     
-    # 仅生成 RSS 到本地文件
+    # 仅生成 RSS 到本地文件，启用内容提取功能
     result = sitemap_to_rss_flow(
         sitemap_url=test_config["sitemap_url"],
         channel_config=test_config["channel_config"],
         output_file=test_config["output_file"],
         filter_config=test_config["filter_config"],
         fetch_titles=True,
+        extract_content=True,  # 默认已开启内容提取
         max_items=5,
         sort_by_date=True
     )

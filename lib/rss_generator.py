@@ -74,7 +74,9 @@ def generate_rss_feed(channel: RSSChannel, items: List[RSSItem]) -> str:
         
         ET.SubElement(item_elem, "title").text = html.escape(item.title)
         ET.SubElement(item_elem, "link").text = item.link
-        ET.SubElement(item_elem, "description").text = html.escape(item.description)
+        
+        # Handle description with potential HTML content
+        create_cdata_element(item_elem, "description", item.description)
         
         # GUID (通常使用链接)
         guid_elem = ET.SubElement(item_elem, "guid")
@@ -96,10 +98,46 @@ def generate_rss_feed(channel: RSSChannel, items: List[RSSItem]) -> str:
     # 转换为字符串
     xml_str = ET.tostring(rss, encoding="unicode", method="xml")
     
-    # 添加 XML 声明和格式化
+    # 添加 XML 声明
     formatted_xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str
     
+    # Post-process to add CDATA sections for HTML content
+    formatted_xml = _add_cdata_to_descriptions(formatted_xml)
+    
     return formatted_xml
+
+
+def _add_cdata_to_descriptions(xml_str: str) -> str:
+    """
+    Post-process XML to wrap HTML descriptions in CDATA sections
+    """
+    import re
+    
+    def replace_html_description(match):
+        content = match.group(1)
+        # Check if content contains HTML tags (escaped or unescaped)
+        if ('&lt;' in content and '&gt;' in content) or ('<' in content and '>' in content):
+            # Unescape any entities that ElementTree added and wrap in CDATA
+            content = html.unescape(content)
+            return f'<description><![CDATA[{content}]]></description>'
+        else:
+            # Keep plain text as-is
+            return match.group(0)
+    
+    # Find and replace description elements
+    pattern = r'<description>(.*?)</description>'
+    result = re.sub(pattern, replace_html_description, xml_str, flags=re.DOTALL)
+    
+    return result
+
+
+def create_cdata_element(parent, tag_name, content):
+    """
+    Create an XML element with content (will be post-processed for CDATA if needed)
+    """
+    elem = ET.SubElement(parent, tag_name)
+    elem.text = content if content else ""
+    return elem
 
 
 def format_rss_date(dt: datetime) -> str:
