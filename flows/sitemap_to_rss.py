@@ -150,21 +150,30 @@ def generate_rss_xml(
 
 @task(log_prints=True)
 def upload_rss_to_r2(
-    rss_xml_content: str,
     object_key: str,
+    content: Optional[str] = None,
+    file_path: Optional[str] = None,
     r2_config: Optional[Dict] = None
 ) -> Dict:
     """
-    上传 RSS XML 内容到 Cloudflare R2
+    上传 RSS 到 Cloudflare R2
     
     Args:
-        rss_xml_content: RSS XML 内容
         object_key: R2 存储的对象键
+        content: RSS XML 内容字符串（与 file_path 二选一）
+        file_path: 本地 RSS 文件路径（与 content 二选一）
         r2_config: R2 配置字典，如果不提供则从环境变量读取
         
     Returns:
         上传结果字典
+        
+    Raises:
+        ValueError: 当 content 和 file_path 都提供或都不提供时
     """
+    # 参数互斥验证
+    if (content is None) == (file_path is None):
+        raise ValueError("必须提供 content 或 file_path 其中一个参数，不能同时提供或都不提供")
+    
     try:
         # 创建 R2 配置
         if r2_config:
@@ -175,17 +184,29 @@ def upload_rss_to_r2(
         # 创建上传器
         uploader = create_r2_uploader(config)
         
-        # 上传内容
-        result = uploader.upload_string(
-            content=rss_xml_content,
-            object_key=object_key,
-            content_type='application/rss+xml'
-        )
-        
-        if result["success"]:
-            print(f"RSS feed 已成功上传到 R2: {result['file_url']}")
+        # 根据参数选择上传方式
+        if content is not None:
+            # 上传字符串内容
+            result = uploader.upload_string(
+                content=content,
+                object_key=object_key,
+                content_type='application/rss+xml'
+            )
+            upload_type = "内容"
         else:
-            print(f"上传 RSS feed 到 R2 失败: {result.get('error', 'Unknown error')}")
+            # 上传文件
+            result = uploader.upload_file(
+                local_file_path=file_path,
+                object_key=object_key,
+                content_type='application/rss+xml'
+            )
+            upload_type = "文件"
+        
+        # 处理结果
+        if result["success"]:
+            print(f"RSS {upload_type}已成功上传到 R2: {result['file_url']}")
+        else:
+            print(f"上传 RSS {upload_type}到 R2 失败: {result.get('error', 'Unknown error')}")
         
         return result
         
@@ -196,57 +217,6 @@ def upload_rss_to_r2(
             "success": False,
             "error": error_msg,
             "object_key": object_key
-        }
-
-
-@task(log_prints=True)
-def upload_rss_file_to_r2(
-    local_file_path: str,
-    object_key: Optional[str] = None,
-    r2_config: Optional[Dict] = None
-) -> Dict:
-    """
-    上传本地 RSS 文件到 Cloudflare R2
-    
-    Args:
-        local_file_path: 本地 RSS 文件路径
-        object_key: R2 存储的对象键，如果不提供则使用文件名
-        r2_config: R2 配置字典，如果不提供则从环境变量读取
-        
-    Returns:
-        上传结果字典
-    """
-    try:
-        # 创建 R2 配置
-        if r2_config:
-            config = R2Config(**r2_config)
-        else:
-            config = R2Config.from_env()
-        
-        # 创建上传器
-        uploader = create_r2_uploader(config)
-        
-        # 上传文件
-        result = uploader.upload_file(
-            local_file_path=local_file_path,
-            object_key=object_key,
-            content_type='application/rss+xml'
-        )
-        
-        if result["success"]:
-            print(f"RSS 文件已成功上传到 R2: {result['file_url']}")
-        else:
-            print(f"上传 RSS 文件到 R2 失败: {result.get('error', 'Unknown error')}")
-        
-        return result
-        
-    except Exception as e:
-        error_msg = f"上传 RSS 文件到 R2 时发生错误: {e}"
-        print(error_msg)
-        return {
-            "success": False,
-            "error": error_msg,
-            "object_key": object_key or Path(local_file_path).name
         }
 
 
@@ -385,14 +355,14 @@ def sitemap_to_rss_with_r2_flow(
     upload_result = None
     if upload_method == "direct":
         # 直接上传 RSS 内容
-        upload_result = upload_rss_to_r2(rss_xml_content, r2_object_key, r2_config)
+        upload_result = upload_rss_to_r2(r2_object_key, content=rss_xml_content, r2_config=r2_config)
     else:
         # 先保存到本地文件，然后上传文件
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(rss_xml_content)
         print(f"RSS feed 已保存到本地: {output_file}")
         
-        upload_result = upload_rss_file_to_r2(output_file, r2_object_key, r2_config)
+        upload_result = upload_rss_to_r2(r2_object_key, file_path=output_file, r2_config=r2_config)
     
     # 构建最终结果
     result = {
@@ -457,7 +427,7 @@ SAMPLE_CONFIGS = {
         "filter_config": {
             "include_patterns": ["/blog/"],
             "exclude_patterns": ["/blog/tags/", "/blog/page/"],
-            "max_items": 6
+            "max_items": 7
         },
         "output_file": "output/prefect_rss.xml",
         "r2_object_key": "feeds/prefect-blog.xml"
