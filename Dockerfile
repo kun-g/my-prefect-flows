@@ -22,8 +22,9 @@ RUN uv sync --frozen
 # 复制项目代码
 COPY . .
 
-# 设置环境变量
-ENV PATH="/app/.venv/bin:$PATH"
+# 设置环境变量 - 确保虚拟环境的 bin 目录在 PATH 中
+ENV VIRTUAL_ENV="/app/.venv"
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV PYTHONPATH="/app:$PYTHONPATH"
 
 # 创建非 root 用户
@@ -32,4 +33,4 @@ RUN chown -R prefect:prefect /app
 USER prefect
 
 # 默认命令（可以通过 docker-compose 覆盖）
-CMD ["prefect", "worker", "start", "--type", "process"]
+CMD ["/app/.venv/bin/prefect", "worker", "start", "--type", "process"]
