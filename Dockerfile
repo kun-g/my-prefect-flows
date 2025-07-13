@@ -1,10 +1,7 @@
-# 使用官方 Python 3.13 镜像作为基础镜像
 FROM python:3.13-slim
 
-# 设置工作目录
 WORKDIR /app
 
-# 安装系统依赖
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -28,9 +25,4 @@ ENV PYTHONPATH="/workspace:$PYTHONPATH"
 
 RUN uv sync --frozen
 
-RUN ls -la
-# RUN which uv 
-
 CMD uv run prefect worker start -p "$WORKER_POOL_NAME" --type process
-# CMD ["tail", "-f", "README.md"]
-# CMD ["uv", "run", "prefect", "worker", "start", "-p", "$WORKER_POOL_NAME", "--type", "process"]
