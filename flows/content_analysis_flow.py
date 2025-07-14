@@ -201,7 +201,7 @@ async def content_analysis_flow(
     print(f"🎯 将分析前 {len(entries_to_analyze)} 篇文章")
     
     # 3. 初始化内容分析器
-    analyzer = ContentAnalyzer(llm_config_path=llm_config_path)
+    analyzer = ContentAnalyzer()
     
     # 4. 批量分析内容
     analysis_tasks = []
@@ -240,20 +240,10 @@ async def content_analysis_flow(
     if saved_path:
         report_path = generate_analysis_report(saved_path)
         
-        # 7. 输出使用统计
-        usage_stats = analyzer.get_usage_statistics()
-        print(f"\n📊 LLM使用统计:")
-        print(f"   总请求数: {usage_stats['total_requests']}")
-        print(f"   成功请求: {usage_stats['successful_requests']}")
-        print(f"   总Token数: {usage_stats['total_tokens']}")
-        print(f"   总成本: ${usage_stats['total_cost']:.4f}")
-        print(f"   平均响应时间: {usage_stats['average_response_time']:.2f}秒")
-        
         return {
             "results_path": saved_path,
             "report_path": report_path,
             "articles_analyzed": len(valid_analyses),
-            "usage_stats": usage_stats
         }
     
     return {"error": "分析失败，没有保存结果"}
@@ -314,6 +304,6 @@ if __name__ == "__main__":
     
     # 单站点分析示例
     asyncio.run(content_analysis_flow(
-        sitemap_url="https://example.com/sitemap.xml",
-        max_articles=5
+        sitemap_url="https://www.prefect.io/sitemap.xml",
+        max_articles=1
     ))

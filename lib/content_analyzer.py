@@ -71,6 +71,8 @@ class ContentAnalyzer:
     ) -> str:
         """使用LiteLLM进行异步完成聊天请求"""
         model = self.models.get(task_type, "gpt-4o-mini")
+
+        print(f"model: {model}")
         
         try:
             response = await litellm.acompletion(
