@@ -7,9 +7,15 @@ import re
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
+import os
+
+try:
+    import litellm
+except ImportError as e:
+    print(f"请安装必要的依赖: pip install litellm")
+    raise e
 
 from .content_analysis import ContentAnalysis, ScoreDimensions, DifficultyLevel, TagCategories
-from .llm_manager import get_llm_manager, LLMManager
 from .content_optimizer import ContentOptimizer
 
 
@@ -19,9 +25,19 @@ class ContentAnalyzer:
     负责协调各个分析模块，提供完整的内容分析功能
     """
     
-    def __init__(self, llm_config_path: Optional[str] = None, max_tokens: int = 4000):
-        self.llm_manager = get_llm_manager(llm_config_path)
+    def __init__(self, max_tokens: int = 4000):
         self.optimizer = ContentOptimizer(max_tokens=max_tokens)
+        
+        # 配置LiteLLM
+        litellm.set_verbose = False
+        
+        # 模型配置
+        self.models = {
+            "summary": "gpt-4o-mini",
+            "tags": "gpt-4o-mini", 
+            "scoring": "gpt-4o",
+            "reading_time": "gpt-4o-mini"
+        }
         
         # 系统提示词
         self.system_prompts = {
@@ -30,6 +46,39 @@ class ContentAnalyzer:
             "scoring": self._get_scoring_prompt(),
             "reading_time": self._get_reading_time_prompt()
         }
+    
+    async def _llm_completion(
+        self, 
+        messages: List[Dict[str, str]], 
+        task_type: str = "summary",
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.7
+    ) -> str:
+        """使用LiteLLM进行异步完成聊天请求"""
+        model = self.models.get(task_type, "gpt-4o-mini")
+        
+        try:
+            response = await litellm.acompletion(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            # 如果主模型失败，尝试使用gpt-4o-mini作为fallback
+            if model != "gpt-4o-mini":
+                try:
+                    response = await litellm.acompletion(
+                        model="gpt-4o-mini",
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature
+                    )
+                    return response.choices[0].message.content.strip()
+                except Exception:
+                    pass
+            raise Exception(f"LLM请求失败: {e}")
     
     def _get_summary_prompt(self) -> str:
         """获取摘要生成提示词"""
@@ -209,14 +258,14 @@ class ContentAnalyzer:
             {"role": "user", "content": f"标题：{title}\n\n内容：{content}"}
         ]
         
-        response = await self.llm_manager.completion(
+        response = await self._llm_completion(
             messages=messages,
-            model="gpt-4o-mini",  # 摘要任务使用较便宜的模型
+            task_type="summary",
             max_tokens=300,
             temperature=0.3
         )
         
-        return response["content"].strip()
+        return response
     
     async def _extract_tags(self, content: str, title: str) -> List[str]:
         """提取内容标签"""
@@ -225,9 +274,9 @@ class ContentAnalyzer:
             {"role": "user", "content": f"标题：{title}\n\n内容：{content[:1500]}"}  # 限制长度
         ]
         
-        response = await self.llm_manager.completion(
+        response = await self._llm_completion(
             messages=messages,
-            model="gpt-4o-mini",
+            task_type="tags",
             max_tokens=200,
             temperature=0.2
         )
@@ -235,11 +284,11 @@ class ContentAnalyzer:
         # 解析JSON响应
         try:
             import json
-            result = json.loads(response["content"])
+            result = json.loads(response)
             return result.get("tags", [])
         except:
             # 如果JSON解析失败，尝试简单的文本解析
-            return self._parse_tags_from_text(response["content"])
+            return self._parse_tags_from_text(response)
     
     async def _calculate_scores(self, content: str, title: str) -> Dict:
         """计算多维度评分"""
@@ -248,9 +297,9 @@ class ContentAnalyzer:
             {"role": "user", "content": f"标题：{title}\n\n内容：{content}"}
         ]
         
-        response = await self.llm_manager.completion(
+        response = await self._llm_completion(
             messages=messages,
-            model="gpt-4o",  # 评分任务使用更强的模型
+            task_type="scoring",
             max_tokens=500,
             temperature=0.1
         )
@@ -258,7 +307,7 @@ class ContentAnalyzer:
         # 解析JSON响应
         try:
             import json
-            result = json.loads(response["content"])
+            result = json.loads(response)
             return {
                 "scores": result.get("scores", {}),
                 "difficulty_level": result.get("difficulty_level", DifficultyLevel.INTERMEDIATE),
@@ -280,15 +329,15 @@ class ContentAnalyzer:
                 {"role": "user", "content": content[:1000]}  # 只传递开头部分
             ]
             
-            response = await self.llm_manager.completion(
+            response = await self._llm_completion(
                 messages=messages,
-                model="gpt-4o-mini",
+                task_type="reading_time",
                 max_tokens=50,
                 temperature=0.1
             )
             
             # 提取数字
-            time_text = response["content"].strip()
+            time_text = response.strip()
             time_match = re.search(r'\d+', time_text)
             
             if time_match:
@@ -400,4 +449,7 @@ class ContentAnalyzer:
     
     def get_usage_statistics(self) -> Dict:
         """获取使用统计信息"""
-        return self.llm_manager.get_usage_stats()
+        # LiteLLM 会自动处理统计信息，这里返回简单的占位符
+        return {
+            "message": "统计信息由 LiteLLM 自动管理"
+        }

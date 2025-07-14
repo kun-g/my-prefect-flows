@@ -9,11 +9,10 @@ import os
 from pathlib import Path
 
 # 添加项目路径
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent))
 
 from lib.content_analysis import ContentAnalysis, ScoreDimensions, TagCategories
 from lib.content_optimizer import ContentOptimizer
-from lib.llm_manager import LLMManager, get_llm_manager
 from lib.content_analyzer import ContentAnalyzer
 
 
@@ -92,28 +91,6 @@ def test_content_optimizer():
     # 测试摘要候选提取
     candidates = optimizer.extract_summary_candidates(test_content)
     print(f"✅ 摘要候选: {len(candidates)}个")
-
-
-def test_llm_manager_basic():
-    """测试LLM管理器基本功能（不需要真实API）"""
-    print("\n🧪 测试LLM管理器基本功能...")
-    
-    try:
-        # 测试配置加载
-        manager = LLMManager()
-        print(f"✅ LLM管理器初始化成功")
-        
-        # 测试token计数
-        test_text = "这是一个测试文本，用于验证token计数功能。"
-        tokens = manager.count_tokens(test_text)
-        print(f"✅ Token计数: {tokens}")
-        
-        # 测试统计功能
-        stats = manager.get_usage_stats()
-        print(f"✅ 使用统计: {stats}")
-        
-    except Exception as e:
-        print(f"⚠️ LLM管理器测试失败 (可能需要API密钥): {e}")
 
 
 async def test_content_analyzer_offline():
@@ -245,7 +222,6 @@ async def main():
     test_environment_setup()
     test_data_structures()
     test_content_optimizer()
-    test_llm_manager_basic()
     await test_content_analyzer_offline()
     run_integration_test()
     

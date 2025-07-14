@@ -9,18 +9,16 @@
 ### 核心组件
 
 1. **ContentAnalysis** - 内容分析结果数据结构
-2. **LLMManager** - 多模型管理器（基于LiteLLM）
-3. **ContentOptimizer** - 智能文本优化器
-4. **ContentAnalyzer** - 主分析控制器
-5. **Prefect工作流** - 批量处理和任务管理
+2. **ContentOptimizer** - 智能文本优化器
+3. **ContentAnalyzer** - 主分析控制器（直接集成LiteLLM）
+4. **Prefect工作流** - 批量处理和任务管理
 
 ### 技术栈
 
-- **LiteLLM**: 多模型抽象层
+- **LiteLLM**: 多模型抽象层，提供统一的API接口
 - **OpenAI GPT-4o/4o-mini**: 主要分析模型
 - **Anthropic Claude-3-Sonnet**: 备选模型（可选）
 - **Prefect**: 工作流编排
-- **tiktoken**: Token计数
 
 ## 🚀 快速开始
 
@@ -31,7 +29,7 @@
 uv sync
 
 # 或使用pip
-pip install litellm tiktoken openai prefect beautifulsoup4
+pip install litellm openai prefect beautifulsoup4
 ```
 
 ### 2. 配置API密钥
