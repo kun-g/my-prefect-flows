@@ -167,9 +167,51 @@ docker run -e WORKER_POOL_NAME=default perfect
 - **`deployments/`**: 每类工作流的配置和部署脚本独立管理
 
 ### 测试和验证
-- 项目当前无正式测试框架，依赖示例脚本验证
-- 建议为每个新工作流提供运行示例
-- 使用 Prefect UI 监控工作流执行状态
+
+#### 单元测试框架
+- **测试框架**: pytest 作为主要测试框架
+- **测试路径**: `tests/` 目录下的所有 `test_*.py` 文件
+- **覆盖率检查**: pytest-cov 提供代码覆盖率报告
+- **并行测试**: pytest-xdist 支持多进程并行测试
+
+#### 测试命令
+```bash
+# 运行所有测试
+uv run pytest
+
+# 运行特定模块测试
+uv run pytest tests/test_rss_generator.py
+
+# 生成覆盖率报告
+uv run pytest --cov=lib --cov-report=html
+
+# 并行运行测试
+uv run pytest -n auto
+```
+
+#### 代码质量工具
+- **代码格式化**: black (120字符行长度)
+- **代码检查**: ruff (pycodestyle + pyflakes + isort + bugbear)
+- **类型检查**: mypy (严格模式)
+
+#### 质量检查命令
+```bash
+# 代码格式化
+uv run black .
+
+# 代码检查和自动修复
+uv run ruff check .
+uv run ruff check . --fix
+
+# 类型检查
+uv run mypy .
+```
+
+#### 测试最佳实践
+- 为每个新功能编写对应的单元测试
+- 保持测试覆盖率在90%以上
+- 使用测试标记区分单元测试和集成测试
+- 在CI/CD中运行完整的测试套件
 
 ### 扩展建议
 - 新工作流类型：参考现有 `flows/` 中的模式
