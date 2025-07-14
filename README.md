@@ -94,6 +94,5 @@ python deployments/deploy_rss_feeds.py deploy
 3. 运行测试确保通过
 4. 提交 Pull Request
 
-## 许可证
-
-请查看 LICENSE 文件了解许可证信息。
+## 参考资料
+- https://github.com/AboutRSS/ALL-about-RSS
