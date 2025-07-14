@@ -188,9 +188,10 @@ await batch_site_analysis_flow(
 ### 并发控制
 
 ```python
-# 调整并发数
-analyzer = ContentAnalyzer()
-results = await analyzer.batch_analyze(
+# 使用批量处理器
+from lib.batch import batch_analyze_articles
+
+results = await batch_analyze_articles(
     articles=articles,
     max_concurrent=3  # 控制并发请求数
 )

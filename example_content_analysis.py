@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
 
 from lib.content_analyzer import ContentAnalyzer
+from lib.batch import batch_analyze_articles
 
 
 async def analyze_sample_content():
@@ -191,7 +192,7 @@ async def batch_analysis_example():
         print(f"🔄 开始批量分析 {len(articles)} 篇文章...")
         
         # 批量分析
-        results = await analyzer.batch_analyze(articles, max_concurrent=2)
+        results = await batch_analyze_articles(articles, max_concurrent=2)
         
         print(f"✅ 完成分析，成功处理 {len(results)} 篇文章")
         

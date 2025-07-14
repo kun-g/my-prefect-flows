@@ -25,19 +25,34 @@ class ContentAnalyzer:
     负责协调各个分析模块，提供完整的内容分析功能
     """
     
-    def __init__(self, max_tokens: int = 4000):
+    def __init__(
+        self, 
+        max_tokens: int = 4000,
+        models: Optional[Dict[str, str]] = None
+    ):
         self.optimizer = ContentOptimizer(max_tokens=max_tokens)
         
         # 配置LiteLLM
         litellm.set_verbose = False
         
-        # 模型配置
-        self.models = {
-            "summary": "gpt-4o-mini",
-            "tags": "gpt-4o-mini", 
-            "scoring": "gpt-4o",
-            "reading_time": "gpt-4o-mini"
+        # 配置代理设置（如果提供）
+        if os.getenv("LITELLM_PROXY_API_BASE"):
+            litellm.api_base = os.getenv("LITELLM_PROXY_API_BASE")
+        if os.getenv("LITELLM_PROXY_API_KEY"):
+            litellm.api_key = os.getenv("LITELLM_PROXY_API_KEY")
+        
+        # 模型配置 - 支持环境变量和参数覆盖
+        default_models = {
+            "summary": os.getenv("SUMMARY_MODEL", "gpt-4o-mini"),
+            "tags": os.getenv("TAGS_MODEL", "gpt-4o-mini"), 
+            "scoring": os.getenv("SCORING_MODEL", "gpt-4o"),
+            "reading_time": os.getenv("READING_TIME_MODEL", "gpt-4o-mini")
         }
+        
+        if models:
+            default_models.update(models)
+        
+        self.models = default_models
         
         # 系统提示词
         self.system_prompts = {
@@ -163,8 +178,7 @@ class ContentAnalyzer:
         self, 
         content: str, 
         title: str, 
-        url: str,
-        concurrent: bool = True
+        url: str
     ) -> ContentAnalysis:
         """
         分析内容并生成完整的分析结果
@@ -173,7 +187,6 @@ class ContentAnalyzer:
             content: 文章正文内容
             title: 文章标题
             url: 文章URL
-            concurrent: 是否并发执行分析任务
             
         Returns:
             ContentAnalysis: 完整的分析结果
@@ -181,12 +194,8 @@ class ContentAnalyzer:
         # 优化内容以适合LLM处理
         optimized_content, optimization_meta = self.optimizer.optimize_for_analysis(content, title)
         
-        if concurrent:
-            # 并发执行各项分析任务
-            results = await self._concurrent_analysis(optimized_content, title)
-        else:
-            # 顺序执行分析任务
-            results = await self._sequential_analysis(optimized_content, title)
+        # 并发执行各项分析任务
+        results = await self._concurrent_analysis(optimized_content, title)
         
         # 整合分析结果
         analysis = self._build_analysis_result(
@@ -220,36 +229,6 @@ class ContentAnalyzer:
                 analysis_results[task_name] = result
         
         return analysis_results
-    
-    async def _sequential_analysis(self, content: str, title: str) -> Dict:
-        """顺序执行分析任务"""
-        results = {}
-        
-        try:
-            results["summary"] = await self._generate_summary(content, title)
-        except Exception as e:
-            print(f"⚠️ 摘要生成失败: {e}")
-            results["summary"] = self._get_fallback_result("summary")
-        
-        try:
-            results["tags"] = await self._extract_tags(content, title)
-        except Exception as e:
-            print(f"⚠️ 标签提取失败: {e}")
-            results["tags"] = self._get_fallback_result("tags")
-        
-        try:
-            results["scores"] = await self._calculate_scores(content, title)
-        except Exception as e:
-            print(f"⚠️ 评分计算失败: {e}")
-            results["scores"] = self._get_fallback_result("scores")
-        
-        try:
-            results["reading_time"] = await self._estimate_reading_time(content)
-        except Exception as e:
-            print(f"⚠️ 阅读时间估算失败: {e}")
-            results["reading_time"] = self._get_fallback_result("reading_time")
-        
-        return results
     
     async def _generate_summary(self, content: str, title: str) -> str:
         """生成内容摘要"""
@@ -409,43 +388,6 @@ class ContentAnalyzer:
             model_used=model_used,
             confidence_score=results["scores"]["confidence"]
         )
-    
-    async def batch_analyze(
-        self, 
-        articles: List[Dict[str, str]], 
-        max_concurrent: int = 3
-    ) -> List[ContentAnalysis]:
-        """
-        批量分析多篇文章
-        
-        Args:
-            articles: 文章列表，每个包含 title, content, url
-            max_concurrent: 最大并发数
-            
-        Returns:
-            List[ContentAnalysis]: 分析结果列表
-        """
-        semaphore = asyncio.Semaphore(max_concurrent)
-        
-        async def analyze_single(article):
-            async with semaphore:
-                try:
-                    return await self.analyze_content(
-                        content=article["content"],
-                        title=article["title"],
-                        url=article["url"]
-                    )
-                except Exception as e:
-                    print(f"❌ 文章分析失败 {article['url']}: {e}")
-                    return None
-        
-        tasks = [analyze_single(article) for article in articles]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        # 过滤掉失败的结果
-        successful_results = [r for r in results if r is not None and not isinstance(r, Exception)]
-        
-        return successful_results
     
     def get_usage_statistics(self) -> Dict:
         """获取使用统计信息"""
