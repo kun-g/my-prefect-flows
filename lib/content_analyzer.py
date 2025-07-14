@@ -62,41 +62,7 @@ class ContentAnalyzer:
             "reading_time": self._get_reading_time_prompt()
         }
     
-    async def _llm_completion(
-        self, 
-        messages: List[Dict[str, str]], 
-        task_type: str = "summary",
-        max_tokens: Optional[int] = None,
-        temperature: float = 0.7
-    ) -> str:
-        """使用LiteLLM进行异步完成聊天请求"""
-        model = self.models.get(task_type, "gpt-4o-mini")
 
-        print(f"model: {model}")
-        
-        try:
-            response = await litellm.acompletion(
-                model=model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            # 如果主模型失败，尝试使用gpt-4o-mini作为fallback
-            if model != "gpt-4o-mini":
-                try:
-                    response = await litellm.acompletion(
-                        model="gpt-4o-mini",
-                        messages=messages,
-                        max_tokens=max_tokens,
-                        temperature=temperature
-                    )
-                    return response.choices[0].message.content.strip()
-                except Exception:
-                    pass
-            raise Exception(f"LLM请求失败: {e}")
-    
     def _get_summary_prompt(self) -> str:
         """获取摘要生成提示词"""
         return """你是一个专业的内容摘要专家。请为给定的技术文章生成一个简洁而全面的摘要。
@@ -239,14 +205,15 @@ class ContentAnalyzer:
             {"role": "user", "content": f"标题：{title}\n\n内容：{content}"}
         ]
         
-        response = await self._llm_completion(
+        model = self.models.get("summary", "gpt-4o-mini")
+        response = await litellm.acompletion(
+            model=model,
             messages=messages,
-            task_type="summary",
             max_tokens=300,
             temperature=0.3
         )
         
-        return response
+        return response.choices[0].message.content.strip()
     
     async def _extract_tags(self, content: str, title: str) -> List[str]:
         """提取内容标签"""
@@ -255,9 +222,10 @@ class ContentAnalyzer:
             {"role": "user", "content": f"标题：{title}\n\n内容：{content[:1500]}"}  # 限制长度
         ]
         
-        response = await self._llm_completion(
+        model = self.models.get("tags", "gpt-4o-mini")
+        response = await litellm.acompletion(
+            model=model,
             messages=messages,
-            task_type="tags",
             max_tokens=200,
             temperature=0.2
         )
@@ -265,11 +233,11 @@ class ContentAnalyzer:
         # 解析JSON响应
         try:
             import json
-            result = json.loads(response)
+            result = json.loads(response.choices[0].message.content.strip())
             return result.get("tags", [])
         except:
             # 如果JSON解析失败，尝试简单的文本解析
-            return self._parse_tags_from_text(response)
+            return self._parse_tags_from_text(response.choices[0].message.content.strip())
     
     async def _calculate_scores(self, content: str, title: str) -> Dict:
         """计算多维度评分"""
@@ -278,9 +246,10 @@ class ContentAnalyzer:
             {"role": "user", "content": f"标题：{title}\n\n内容：{content}"}
         ]
         
-        response = await self._llm_completion(
+        model = self.models.get("scoring", "gpt-4o")
+        response = await litellm.acompletion(
+            model=model,
             messages=messages,
-            task_type="scoring",
             max_tokens=500,
             temperature=0.1
         )
@@ -288,7 +257,7 @@ class ContentAnalyzer:
         # 解析JSON响应
         try:
             import json
-            result = json.loads(response)
+            result = json.loads(response.choices[0].message.content.strip())
             return {
                 "scores": result.get("scores", {}),
                 "difficulty_level": result.get("difficulty_level", DifficultyLevel.INTERMEDIATE),
@@ -310,15 +279,16 @@ class ContentAnalyzer:
                 {"role": "user", "content": content[:1000]}  # 只传递开头部分
             ]
             
-            response = await self._llm_completion(
+            model = self.models.get("reading_time", "gpt-4o-mini")
+            response = await litellm.acompletion(
+                model=model,
                 messages=messages,
-                task_type="reading_time",
                 max_tokens=50,
                 temperature=0.1
             )
             
             # 提取数字
-            time_text = response.strip()
+            time_text = response.choices[0].message.content.strip()
             time_match = re.search(r'\d+', time_text)
             
             if time_match:
