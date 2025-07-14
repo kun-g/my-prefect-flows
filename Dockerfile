@@ -24,5 +24,6 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV PYTHONPATH="/workspace:$PYTHONPATH"
 
 RUN uv sync --frozen
+RUN uv tree
 
 CMD uv run prefect worker start -p "$WORKER_POOL_NAME" --type process
