@@ -2,6 +2,7 @@ import PyRSS2Gen as rss
 from datetime import datetime
 from typing import List, Optional
 from dataclasses import dataclass
+import xml.etree.ElementTree as ET
 
 
 @dataclass
@@ -29,6 +30,8 @@ class RSSChannel:
     ttl: int = 60  # minutes
 
 
+
+
 def generate_rss_feed(channel: RSSChannel, items: List[RSSItem]) -> str:
     """
     生成 RSS 2.0 格式的 XML feed
@@ -52,7 +55,7 @@ def generate_rss_feed(channel: RSSChannel, items: List[RSSItem]) -> str:
         )
         rss_items.append(rss_item)
     
-    # 创建 RSS 频道
+    # 创建标准RSS频道
     feed = rss.RSS2(
         title=channel.title,
         link=channel.link,
@@ -70,79 +73,61 @@ def generate_rss_feed(channel: RSSChannel, items: List[RSSItem]) -> str:
     if isinstance(xml_content, bytes):
         xml_content = xml_content.decode('utf-8')
     
-    # 添加必要的兼容性处理
-    xml_content = _add_compatibility_features(xml_content, channel.link)
+    # 应用必要的后处理
+    xml_content = _apply_final_formatting(xml_content, channel.link)
     
     return xml_content
 
 
-def _add_compatibility_features(xml_str: str, channel_link: str) -> str:
-    """
-    添加关键的兼容性功能
-    """
+def _apply_final_formatting(xml_str: str, channel_link: str) -> str:
+    """应用最终格式化：Atom命名空间、自引用链接和CDATA处理"""
     import re
     import html
     
-    # 1. 添加 Atom 命名空间
-    xml_str = xml_str.replace(
-        '<rss version="2.0">',
-        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">'
-    )
+    # 添加Atom命名空间
+    xml_str = xml_str.replace('<rss version="2.0">', '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">')
     
-    # 2. 移除默认的 docs 元素
-    xml_str = re.sub(r'<docs>.*?</docs>', '', xml_str)
-    
-    # 3. 添加自引用链接
-    atom_link = f'<atom:link href="{channel_link}/rss.xml" rel="self" type="application/rss+xml" />'
-    xml_str = re.sub(r'(</ttl>\s*)', f'\\1{atom_link}', xml_str)
-    
-    # 4. 转换日期格式
+    # 日期格式和清理
     xml_str = xml_str.replace(' GMT</', ' +0000</')
+    xml_str = re.sub(r'<docs>.*?</docs>\s*', '', xml_str)
     
-    # 5. 转换 HTML 内容为 CDATA
+    # 添加Atom自引用链接
+    atom_link = f'<atom:link href="{channel_link}/rss.xml" rel="self" type="application/rss+xml" />'
+    insert_pattern = r'(</ttl>\s*)' if '<ttl>' in xml_str else r'(</generator>\s*)'
+    xml_str = re.sub(insert_pattern, f'\\1{atom_link}', xml_str)
+    
+    # CDATA处理
     def to_cdata(match):
         content = match.group(1)
         if '&lt;' in content and '&gt;' in content:
-            content = html.unescape(content)
-            return f'<description><![CDATA[{content}]]></description>'
+            return f'<description><![CDATA[{html.unescape(content)}]]></description>'
         return match.group(0)
     
-    xml_str = re.sub(r'<description>(.*?)</description>', to_cdata, xml_str, flags=re.DOTALL)
-    
-    return xml_str
+    return re.sub(r'<description>(.*?)</description>', to_cdata, xml_str, flags=re.DOTALL)
 
 
-# 保持向后兼容的辅助函数
 def format_rss_date(dt: datetime) -> str:
-    """将 datetime 对象格式化为 RSS 标准的日期格式 (RFC 822)"""
+    """将datetime对象格式化为RSS标准日期格式(RFC 822)"""
     return dt.strftime("%a, %d %b %Y %H:%M:%S +0000")
 
 
 def extract_title_from_url(url: str) -> str:
-    """从 URL 中提取标题，作为默认标题"""
+    """从URL提取标题"""
     path = url.split('//')[-1]
     if '/' in path:
         path = '/'.join(path.split('/')[1:])
-    
     if '.' in path.split('/')[-1]:
         path = path.rsplit('.', 1)[0]
-    
     title = path.replace('-', ' ').replace('_', ' ').replace('/', ' - ')
     return title.title() if title else "Untitled"
 
 
 def create_rss_item_from_sitemap_entry(entry, title: Optional[str] = None, description: Optional[str] = None) -> RSSItem:
-    """从 sitemap 条目创建 RSS 条目"""
-    if not title:
-        title = extract_title_from_url(entry.url)
-    
-    if not description:
-        description = f"页面更新于 {entry.lastmod.strftime('%Y-%m-%d %H:%M:%S') if entry.lastmod else '未知时间'}"
-    
+    """从sitemap条目创建RSS条目"""
     return RSSItem(
-        title=title,
+        title=title or extract_title_from_url(entry.url),
         link=entry.url,
-        description=description,
+        description=description or f"页面更新于 {entry.lastmod.strftime('%Y-%m-%d %H:%M:%S') if entry.lastmod else '未知时间'}",
         pub_date=entry.lastmod,
         guid=entry.url
     )
