@@ -15,3 +15,11 @@ output/
 .DS_Store
 
 .env
+# 智能内容分析系统
+config/llm_config.json
+logs/
+tmp/
+*.log
+*.pyc
+.pytest_cache/
+.coverage
