@@ -14,4 +14,4 @@ output/
 
 .DS_Store
 
-.envoutput/
+.env

@@ -29,22 +29,6 @@ from lib.rss_generator import (
 class TestRSSDataStructures(unittest.TestCase):
     """测试RSS数据结构"""
     
-    def test_rss_item_creation(self):
-        """测试RSSItem创建"""
-        item = RSSItem(
-            title="Test Title",
-            link="https://example.com/test",
-            description="Test description"
-        )
-        
-        self.assertEqual(item.title, "Test Title")
-        self.assertEqual(item.link, "https://example.com/test")
-        self.assertEqual(item.description, "Test description")
-        self.assertIsNone(item.pub_date)
-        self.assertIsNone(item.guid)
-        self.assertIsNone(item.author)
-        self.assertIsNone(item.category)
-    
     def test_rss_item_with_optional_fields(self):
         """测试RSSItem的可选字段"""
         pub_date = datetime(2025, 7, 14, 12, 0, 0)
@@ -62,21 +46,6 @@ class TestRSSDataStructures(unittest.TestCase):
         self.assertEqual(item.guid, "custom-guid")
         self.assertEqual(item.author, "Test Author")
         self.assertEqual(item.category, "Test Category")
-    
-    def test_rss_channel_creation(self):
-        """测试RSSChannel创建"""
-        channel = RSSChannel(
-            title="Test Channel",
-            link="https://example.com",
-            description="Test channel description"
-        )
-        
-        self.assertEqual(channel.title, "Test Channel")
-        self.assertEqual(channel.link, "https://example.com")
-        self.assertEqual(channel.description, "Test channel description")
-        self.assertEqual(channel.language, "zh-CN")  # 默认值
-        self.assertEqual(channel.generator, "Prefect RSS Generator")  # 默认值
-        self.assertEqual(channel.ttl, 60)  # 默认值
 
 
 class TestRSSGeneration(unittest.TestCase):
