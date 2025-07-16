@@ -85,8 +85,6 @@ def save_analysis_results(analyses: List[ContentAnalysis], output_path: str) -> 
     # 转换为字典格式
     results = {
         "analyzed_at": datetime.now().isoformat(),
-        "total_articles": len(valid_analyses),
-        "average_score": sum(a.reading_score for a in valid_analyses) / len(valid_analyses),
         "articles": [analysis.to_dict() for analysis in valid_analyses]
     }
     
@@ -99,121 +97,48 @@ def save_analysis_results(analyses: List[ContentAnalysis], output_path: str) -> 
         json.dump(results, f, ensure_ascii=False, indent=2)
     
     print(f"✅ 结果已保存到: {output_path}")
-    print(f"📊 统计信息: {len(valid_analyses)}篇文章，平均评分: {results['average_score']:.2f}")
     
     return output_path
 
 
-@task(log_prints=True)
-def generate_analysis_report(results_path: str) -> str:
-    """
-    生成分析报告
-    """
-    try:
-        with open(results_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        articles = data.get("articles", [])
-        if not articles:
-            return "没有可用的分析数据"
-        
-        # 生成统计报告
-        scores = [a["reading_score"] for a in articles]
-        difficulties = [a["difficulty_level"] for a in articles]
-        
-        report = f"""
-# 智能内容分析报告
-
-## 基本统计
-- 分析文章数量: {len(articles)}
-- 平均阅读价值评分: {sum(scores)/len(scores):.2f}/10
-- 最高评分: {max(scores):.2f}
-- 最低评分: {min(scores):.2f}
-
-## 难度分布
-- 初级: {difficulties.count('初级')}篇
-- 中级: {difficulties.count('中级')}篇  
-- 高级: {difficulties.count('高级')}篇
-
-## 高价值文章推荐 (评分>=8.0)
-"""
-        
-        # 筛选高价值文章
-        high_value = [a for a in articles if a["reading_score"] >= 8.0]
-        high_value.sort(key=lambda x: x["reading_score"], reverse=True)
-        
-        for i, article in enumerate(high_value[:10], 1):
-            report += f"""
-### {i}. {article['title']} ({article['reading_score']:.1f}分)
-- URL: {article['url']}
-- 难度: {article['difficulty_level']}
-- 预估阅读时间: {article['reading_time_minutes']}分钟
-- 标签: {', '.join(article['tags'])}
-- 摘要: {article['summary'][:100]}...
-
-"""
-        
-        # 保存报告
-        report_path = results_path.replace('.json', '_report.md')
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(report)
-        
-        print(f"📋 报告已生成: {report_path}")
-        return report_path
-        
-    except Exception as e:
-        print(f"❌ 报告生成失败: {e}")
-        return ""
 
 
-@flow(name="智能内容分析工作流", description="从sitemap提取URL并进行智能内容分析")
+@flow(name="智能内容分析工作流", description="对指定URL列表进行智能内容分析")
 async def content_analysis_flow(
-    sitemap_url: str,
+    urls: List[str],
     output_dir: str = "output/content_analysis",
-    max_articles: int = 20,
-    max_concurrent: int = 3,
-    llm_config_path: Optional[str] = None
+    max_concurrent: int = 3
 ):
     """
     智能内容分析主工作流
     
     Args:
-        sitemap_url: sitemap URL
+        urls: 要分析的URL列表
         output_dir: 输出目录
-        max_articles: 最大分析文章数
         max_concurrent: 最大并发数
-        llm_config_path: LLM配置文件路径
     """
     print(f"🚀 开始智能内容分析工作流")
-    print(f"📍 Sitemap URL: {sitemap_url}")
+    print(f"📍 分析URL数量: {len(urls)}")
     print(f"📁 输出目录: {output_dir}")
     
-    # 1. 获取sitemap条目
-    try:
-        sitemap_entries = fetch_sitemap(sitemap_url)
-        print(f"📄 获取到 {len(sitemap_entries)} 个sitemap条目")
-    except Exception as e:
-        print(f"❌ 获取sitemap失败: {e}")
-        return
+    if not urls:
+        print("❌ 没有提供要分析的URL")
+        return {"error": "没有提供要分析的URL"}
     
-    # 2. 限制分析数量
-    entries_to_analyze = sitemap_entries[:max_articles]
-    print(f"🎯 将分析前 {len(entries_to_analyze)} 篇文章")
-    
-    # 3. 初始化内容分析器
+    # 1. 初始化内容分析器
     analyzer = ContentAnalyzer()
     
-    # 4. 批量分析内容
+    # 2. 批量分析内容
     analysis_tasks = []
     semaphore = asyncio.Semaphore(max_concurrent)
     
-    async def analyze_with_semaphore(entry: SitemapEntry):
+    async def analyze_with_semaphore(url: str):
         async with semaphore:
-            return await analyze_single_url(entry.url, analyzer)
+            return await analyze_single_url(url, analyzer)
     
     # 创建所有分析任务
-    for entry in entries_to_analyze:
-        task = analyze_with_semaphore(entry)
+    for url in urls:
+        task = analyze_with_semaphore(url)
         analysis_tasks.append(task)
     
     # 等待所有分析完成
@@ -230,64 +155,59 @@ async def content_analysis_flow(
     
     print(f"✅ 成功分析 {len(valid_analyses)} 篇文章")
     
-    # 5. 保存结果
+    # 3. 保存结果
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     results_path = f"{output_dir}/analysis_results_{timestamp}.json"
     
     saved_path = save_analysis_results(valid_analyses, results_path)
     
-    # 6. 生成报告
+    # 4. 打印摘要
     if saved_path:
-        report_path = generate_analysis_report(saved_path)
-        
         return {
             "results_path": saved_path,
-            "report_path": report_path,
             "articles_analyzed": len(valid_analyses),
         }
     
     return {"error": "分析失败，没有保存结果"}
 
 
-@flow(name="批量站点内容分析", description="分析多个站点的内容")
-async def batch_site_analysis_flow(
-    sites_config: List[Dict[str, str]],
-    output_dir: str = "output/batch_analysis",
-    max_articles_per_site: int = 10
+@flow(name="批量URL组内容分析", description="分析多组URL的内容")
+async def batch_urls_analysis_flow(
+    url_groups: List[Dict[str, any]],
+    output_dir: str = "output/batch_analysis"
 ):
     """
-    批量分析多个站点的内容
+    批量分析多组URL的内容
     
     Args:
-        sites_config: 站点配置列表，每个包含 name, sitemap_url
+        url_groups: URL组配置列表，每个包含 name, urls 字段
         output_dir: 输出目录
-        max_articles_per_site: 每个站点最大分析文章数
     """
-    print(f"🚀 开始批量站点内容分析")
-    print(f"📍 待分析站点数: {len(sites_config)}")
+    print(f"🚀 开始批量URL组内容分析")
+    print(f"📍 待分析URL组数: {len(url_groups)}")
     
     results = {}
     
-    for site in sites_config:
-        site_name = site["name"]
-        sitemap_url = site["sitemap_url"]
+    for group in url_groups:
+        group_name = group["name"]
+        urls = group["urls"]
+        max_concurrent = group.get("max_concurrent", 2)
         
-        print(f"\n🔍 分析站点: {site_name}")
+        print(f"\n🔍 分析URL组: {group_name} ({len(urls)} 个URL)")
         
-        site_output_dir = f"{output_dir}/{site_name}"
+        group_output_dir = f"{output_dir}/{group_name}"
         
         try:
             result = await content_analysis_flow(
-                sitemap_url=sitemap_url,
-                output_dir=site_output_dir,
-                max_articles=max_articles_per_site,
-                max_concurrent=2  # 降低并发以避免被限制
+                urls=urls,
+                output_dir=group_output_dir,
+                max_concurrent=max_concurrent
             )
-            results[site_name] = result
+            results[group_name] = result
             
         except Exception as e:
-            print(f"❌ 站点 {site_name} 分析失败: {e}")
-            results[site_name] = {"error": str(e)}
+            print(f"❌ URL组 {group_name} 分析失败: {e}")
+            results[group_name] = {"error": str(e)}
     
     # 生成汇总报告
     summary_path = f"{output_dir}/batch_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
@@ -298,12 +218,52 @@ async def batch_site_analysis_flow(
     return results
 
 
+# 便利函数
+def create_url_list_from_text(text: str) -> List[str]:
+    """
+    从文本中提取URL列表
+    支持换行分隔或逗号分隔的URL
+    """
+    urls = []
+    for line in text.strip().split('\n'):
+        line = line.strip()
+        if line:
+            # 处理逗号分隔的URL
+            if ',' in line:
+                urls.extend([url.strip() for url in line.split(',') if url.strip()])
+            else:
+                urls.append(line)
+    
+    # 过滤有效的URL
+    valid_urls = []
+    for url in urls:
+        if url.startswith(('http://', 'https://')):
+            valid_urls.append(url)
+    
+    return valid_urls
+
+
+def create_url_list_from_file(file_path: str) -> List[str]:
+    """
+    从文件中读取URL列表
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return create_url_list_from_text(content)
+    except Exception as e:
+        print(f"❌ 读取文件失败: {e}")
+        return []
+
+
 if __name__ == "__main__":
     # 示例运行
     import asyncio
     
-    # 单站点分析示例
-    asyncio.run(content_analysis_flow(
-        sitemap_url="https://www.prefect.io/sitemap.xml",
-        max_articles=1
-    ))
+    # 直接URL列表分析示例
+    example_urls = [
+        "https://www.prefect.io/blog/introducing-prefect-3",
+        "https://www.prefect.io/blog/prefect-flows-vs-airflow-dags"
+    ]
+    
+    asyncio.run(content_analysis_flow(urls=example_urls))
