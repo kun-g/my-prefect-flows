@@ -14,7 +14,7 @@
 
 ## 决策
 
-### 采用 LocalFileSystem + SQLite 组合的增量状态管理方案
+### 采用 SQLite 数据库的增量状态管理方案
 
 **核心原则**：
 - **状态跟踪**：记录每个站点的处理历史和URL状态
@@ -25,21 +25,17 @@
 ### 架构设计
 
 #### 1. 状态存储方案
-**Prefect LocalFileSystem Block + SQLite 组合**：
+**SQLite 数据库**：
 ```python
 # 文件结构
-./rss_states/
-├── rss_incremental.db        # SQLite数据库
-└── backups/                  # 定期备份
-    ├── rss_state_2025-07-12.json
-    └── ...
+rss_incremental.db            # SQLite数据库文件
 ```
 
 **优势**：
-- **简单部署**：单机环境下直接使用相对路径
+- **架构简单**：只需要一个数据库文件
 - **强大查询**：SQLite 支持复杂的增量逻辑
 - **事务保证**：数据一致性好
-- **易于迁移**：后续可切换到远程存储（S3/GCS）或远程数据库
+- **易于迁移**：后续可切换到远程数据库
 - **调试友好**：可用 SQLite 工具直接查看数据
 
 #### 2. 数据库设计
@@ -47,9 +43,8 @@
 -- 站点状态表
 CREATE TABLE site_states (
     site_name TEXT PRIMARY KEY,
+    sitemap_url TEXT,
     last_run TIMESTAMP,
-    last_sitemap_etag TEXT,
-    config_hash TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -58,8 +53,7 @@ CREATE TABLE site_states (
 CREATE TABLE url_states (
     site_name TEXT,
     url TEXT,
-    last_modified TIMESTAMP,
-    content_hash TEXT,
+    state INTEGER DEFAULT 0,      -- 0:未处理, 1:已处理, 2:处理失败
     first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (site_name, url),
@@ -67,33 +61,32 @@ CREATE TABLE url_states (
 );
 
 -- 性能优化索引
-CREATE INDEX idx_url_lastmod ON url_states(last_modified);
+CREATE INDEX idx_url_state ON url_states(state);
 CREATE INDEX idx_url_lastseen ON url_states(last_seen);
 ```
 
 #### 3. 增量检测逻辑
-**三种变化检测策略**：
+**简化的检测策略**：
 1. **新增URL**：在 `url_states` 表中不存在的URL
-2. **修改URL**：`lastmod` 时间戳比记录的更新
-3. **未变化URL**：时间戳相同或没有 `lastmod` 的URL
+2. **未处理URL**：存在但 `state = 0` 的URL
+3. **已处理URL**：`state = 1` 的URL（跳过）
 
-**处理模式**：
-- **仅新增模式**：只处理全新的URL
-- **新增+修改模式**：处理新URL和 lastmod 更新的URL（推荐）
-- **智能模式**：基于内容变化检测（适合没有 lastmod 的站点）
+**处理逻辑**：
+- 只处理新增和未处理的URL
+- 处理成功后将 `state` 设置为 1
+- 处理失败的设置为 2，下次可以重试
 
 #### 4. 核心组件设计
 
 **状态管理器**：
 ```python
 class IncrementalStateManager:
-    def __init__(self, base_path: str = "./rss_states"):
-        self.fs = LocalFileSystem(basepath=base_path)
-        self.db_filename = "rss_incremental.db"
+    def __init__(self, db_path: str = "rss_incremental.db"):
+        self.db_path = db_path
     
     async def get_site_state(self, site_name: str) -> SiteState
-    async def detect_changes(self, site_name: str, current_entries: List[SitemapEntry]) -> IncrementalResult
-    async def update_state(self, site_name: str, processed_entries: List[SitemapEntry])
+    async def detect_new_urls(self, site_name: str, current_entries: List[SitemapEntry]) -> List[str]
+    async def mark_urls_processed(self, site_name: str, urls: List[str], success: bool = True)
     async def cleanup_old_states(self, days_to_keep: int = 30)
 ```
 
@@ -102,16 +95,15 @@ class IncrementalStateManager:
 @dataclass
 class SiteState:
     site_name: str
+    sitemap_url: str
     last_run: Optional[datetime]
-    last_sitemap_etag: Optional[str]
-    processed_urls: Dict[str, datetime]  # url -> last_modified
 
 @dataclass  
 class IncrementalResult:
     new_urls: List[str]
-    modified_urls: List[str]
-    unchanged_urls: List[str]
-    total_processed: int
+    pending_urls: List[str]  # 之前失败的URL
+    skipped_urls: List[str]  # 已处理的URL
+    total_to_process: int
 ```
 
 #### 5. 工作流集成
@@ -135,7 +127,7 @@ async def incremental_sitemap_to_rss_flow(
 
 ### 现有代码复用分析
 
-**可直接复用 (85%)**：
+**可直接复用 (90%)**：
 - ✅ `fetch_sitemap()` - sitemap获取
 - ✅ `apply_rss_filters()` - 过滤逻辑
 - ✅ `sort_entries_by_date()` - 排序逻辑
@@ -143,17 +135,17 @@ async def incremental_sitemap_to_rss_flow(
 - ✅ `generate_rss_xml()` - XML生成
 - ✅ 所有配置和示例代码
 
-**需要增强的部分 (15%)**：
+**需要增强的部分 (10%)**：
 - 在主流程中增加增量检测步骤
-- 添加状态管理和更新逻辑
+- 添加简单的状态管理逻辑
 - 增加配置参数控制增量行为
 
 ### 容错和恢复机制
 
 #### 1. 错误降级策略
 **三级降级机制**：
-1. **轻微错误**：跳过单个URL，继续处理其他
-2. **中等错误**：回退到上次成功状态，处理部分增量
+1. **轻微错误**：跳过单个URL，将状态记录为失败（state=2）
+2. **中等错误**：重试之前失败的URL（state=2）
 3. **严重错误**：降级到全量模式
 
 ```python
@@ -161,8 +153,8 @@ async def incremental_sitemap_to_rss_flow(
 async def incremental_fetch_with_fallback():
     try:
         return await incremental_mode()
-    except IncrementalStateCorrupted:
-        logger.warning("状态损坏，降级到全量模式")
+    except DatabaseCorrupted:
+        logger.warning("数据库损坏，降级到全量模式")
         return await full_refresh_mode()
 ```
 
@@ -171,6 +163,7 @@ async def incremental_fetch_with_fallback():
 - 保留最近30天的URL状态
 - 每个站点最多保留1000个URL记录
 - 每次运行自动清理过期状态
+- 优先清理已处理成功的URL（state=1）
 
 #### 3. 首次运行处理
 **智能初始化**：
@@ -179,24 +172,25 @@ def initialize_incremental_state(site_config):
     if not state_exists():
         # 首次运行：处理最近N条作为基线
         baseline_items = fetch_recent_baseline(max_items=10)
-        save_initial_state(baseline_items)
+        # 将基线项目直接标记为已处理（state=1）
+        save_initial_state(baseline_items, state=1)
     return load_state()
 ```
 
 ### 部署环境适配
 
 #### 1. 当前环境（单机）
-- 使用相对路径 `./rss_states/`
-- Worker直接访问本地文件
+- 使用相对路径 `rss_incremental.db`
+- Worker直接访问本地数据库文件
 - SQLite文件在项目目录下
 
 #### 2. Docker环境（未来）
-- 使用volume挂载：`/app/rss_states/`
+- 使用volume挂载：`/app/rss_incremental.db`
 - 保持状态在容器重启后持久化
-- 环境变量控制存储路径
+- 环境变量控制数据库路径
 
 #### 3. 集群环境（未来）
-- 切换到远程存储（S3/GCS + 云数据库）
+- 切换到远程数据库（PostgreSQL/MySQL）
 - 或者使用共享文件系统（NFS + SQLite）
 - 通过配置轻松切换存储后端
 
@@ -219,18 +213,18 @@ def initialize_incremental_state(site_config):
    - 缓解：后续迁移到远程数据库
 
 ### 成本分析
-1. **开发成本**：约2-3天（新增状态管理逻辑）
+1. **开发成本**：约1-2天（简化的状态管理逻辑）
 2. **维护成本**：低（SQLite文件简单可靠）
 3. **运行成本**：大幅降低（减少API调用和网络请求）
 
 ## 实施计划
 
-### Phase 1: 核心状态管理 (1天)
+### Phase 1: 核心状态管理 (0.5天)
 - [ ] 实现 `IncrementalStateManager` 类
 - [ ] 设计数据库schema和初始化逻辑
 - [ ] 编写基础的增量检测逻辑
 
-### Phase 2: 工作流集成 (1天)
+### Phase 2: 工作流集成 (0.5天)
 - [ ] 集成到现有的 `sitemap_to_rss_flow`
 - [ ] 添加增量模式参数和配置
 - [ ] 实现错误降级机制
@@ -260,9 +254,11 @@ INCREMENTAL_CONFIGS = {
             "description": "Latest blog posts from Prefect - incremental updates"
         },
         "incremental_config": {       # 新增：增量配置
-            "max_unchanged_days": 30,
+            "db_path": "rss_incremental.db",
+            "max_history_days": 30,
             "baseline_items": 10,
-            "cleanup_interval_days": 7
+            "cleanup_interval_days": 7,
+            "retry_failed_urls": True
         }
     }
 }

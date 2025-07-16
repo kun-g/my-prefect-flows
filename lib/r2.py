@@ -2,10 +2,15 @@
 Minimal Cloudflare R2 client
 依赖：pip install boto3 python-dotenv
 """
+
 from __future__ import annotations
-import os, boto3
+
+import os
+
+import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
+
 load_dotenv()
 
 
@@ -13,8 +18,8 @@ class R2Config:
     account_id: str = os.getenv("R2_ACCOUNT_ID", "")
     access_key: str = os.getenv("R2_ACCESS_KEY_ID", "")
     secret_key: str = os.getenv("R2_SECRET_ACCESS_KEY", "")
-    bucket: str    = os.getenv("R2_BUCKET_NAME", "")
-    region: str    = "auto"
+    bucket: str = os.getenv("R2_BUCKET_NAME", "")
+    region: str = "auto"
     custom_domain: str | None = os.getenv("R2_CUSTOM_DOMAIN")
 
     @property
@@ -39,18 +44,27 @@ class R2Client:
             region_name=cfg.region,
             config=boto3.session.Config(signature_version="s3v4"),
         )
+
     # ---------- 基础操作 ----------
-    def upload(self, local_path: str | None = None, *, content: str | bytes | None = None, key: str | None = None, encoding: str = "utf-8", **kwargs):
+    def upload(
+        self,
+        local_path: str | None = None,
+        *,
+        content: str | bytes | None = None,
+        key: str | None = None,
+        encoding: str = "utf-8",
+        **kwargs,
+    ):
         """
         Unified upload function that handles file paths, string content, and bytes content.
-        
+
         Args:
             local_path: Path to local file to upload
             content: String or bytes content to upload (keyword-only)
             key: Object key in bucket (defaults to basename of local_path if uploading file)
             encoding: Encoding for string content (default: utf-8)
             **kwargs: Additional arguments passed to boto3
-            
+
         Examples:
             upload("abc.jpg")                    # Upload file from path
             upload(content="abc")                # Upload string content
@@ -60,7 +74,7 @@ class R2Client:
         # Validate arguments
         if (local_path is None) == (content is None):
             raise ValueError("Must provide either local_path or content parameter, not both or neither")
-        
+
         if local_path is not None:
             # File upload mode
             key = key or os.path.basename(local_path)
@@ -69,7 +83,7 @@ class R2Client:
             # Content upload mode
             if key is None:
                 raise ValueError("key parameter is required when uploading content")
-            
+
             if isinstance(content, str):
                 # String content - encode to bytes
                 data = content.encode(encoding)
@@ -78,7 +92,7 @@ class R2Client:
                 data = content
             else:
                 raise ValueError("content must be str or bytes")
-            
+
             self._cli.put_object(Bucket=self._bucket, Key=key, Body=data, **kwargs)
 
     def download(self, key: str, local_path: str):

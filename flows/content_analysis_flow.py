@@ -41,15 +41,15 @@ async def analyze_single_url(url: str, analyzer: ContentAnalyzer) -> ContentAnal
         response.raise_for_status()
 
         # 提取标题和内容
-        soup = BeautifulSoup(response.content, 'html.parser')
-        title = soup.find('title')
+        soup = BeautifulSoup(response.content, "html.parser")
+        title = soup.find("title")
         title_text = title.get_text().strip() if title else "无标题"
 
         # 使用现有的内容提取器
         content = extract_page_content(response.text, url)
 
         # 清理HTML标签获取纯文本
-        content_soup = BeautifulSoup(content, 'html.parser')
+        content_soup = BeautifulSoup(content, "html.parser")
         clean_content = content_soup.get_text()
 
         if len(clean_content.strip()) < 100:
@@ -57,11 +57,7 @@ async def analyze_single_url(url: str, analyzer: ContentAnalyzer) -> ContentAnal
             return None
 
         # 执行智能分析
-        analysis = await analyzer.analyze_content(
-            content=clean_content,
-            title=title_text,
-            url=url
-        )
+        analysis = await analyzer.analyze_content(content=clean_content, title=title_text, url=url)
 
         print(f"✅ 分析完成: {url} (评分: {analysis.reading_score:.1f})")
         return analysis
@@ -86,7 +82,7 @@ def save_analysis_results(analyses: list[ContentAnalysis], output_path: str) -> 
     # 转换为字典格式
     results = {
         "analyzed_at": datetime.now().isoformat(),
-        "articles": [analysis.to_dict() for analysis in valid_analyses]
+        "articles": [analysis.to_dict() for analysis in valid_analyses],
     }
 
     # 确保输出目录存在
@@ -94,7 +90,7 @@ def save_analysis_results(analyses: list[ContentAnalysis], output_path: str) -> 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # 保存JSON文件
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
     print(f"✅ 结果已保存到: {output_path}")
@@ -104,9 +100,7 @@ def save_analysis_results(analyses: list[ContentAnalysis], output_path: str) -> 
 
 @flow(name="智能内容分析工作流", description="对指定URL列表进行智能内容分析")
 async def content_analysis_flow(
-    urls: list[str],
-    output_dir: str = "output/content_analysis",
-    max_concurrent: int = 3
+    urls: list[str], output_dir: str = "output/content_analysis", max_concurrent: int = 3
 ) -> dict[str, Any]:
     """
     智能内容分析主工作流
@@ -172,8 +166,7 @@ async def content_analysis_flow(
 
 @flow(name="批量URL组内容分析", description="分析多组URL的内容")
 async def batch_urls_analysis_flow(
-    url_groups: list[dict[str, Any]],
-    output_dir: str = "output/batch_analysis"
+    url_groups: list[dict[str, Any]], output_dir: str = "output/batch_analysis"
 ) -> dict[str, Any]:
     """
     批量分析多组URL的内容
@@ -197,11 +190,7 @@ async def batch_urls_analysis_flow(
         group_output_dir = f"{output_dir}/{group_name}"
 
         try:
-            result = await content_analysis_flow(
-                urls=urls,
-                output_dir=group_output_dir,
-                max_concurrent=max_concurrent
-            )
+            result = await content_analysis_flow(urls=urls, output_dir=group_output_dir, max_concurrent=max_concurrent)
             results[group_name] = result
 
         except Exception as e:
@@ -210,7 +199,7 @@ async def batch_urls_analysis_flow(
 
     # 生成汇总报告
     summary_path = f"{output_dir}/batch_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    with open(summary_path, 'w', encoding='utf-8') as f:
+    with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
     print(f"\n✅ 批量分析完成，汇总报告: {summary_path}")
@@ -224,20 +213,19 @@ def create_url_list_from_text(text: str) -> list[str]:
     支持换行分隔或逗号分隔的URL
     """
     urls = []
-    for line in text.strip().split('\n'):
+    for line in text.strip().split("\n"):
         line = line.strip()
         if line:
             # 处理逗号分隔的URL
-            if ',' in line:
-                urls.extend([url.strip()
-                            for url in line.split(',') if url.strip()])
+            if "," in line:
+                urls.extend([url.strip() for url in line.split(",") if url.strip()])
             else:
                 urls.append(line)
 
     # 过滤有效的URL
     valid_urls = []
     for url in urls:
-        if url.startswith(('http://', 'https://')):
+        if url.startswith(("http://", "https://")):
             valid_urls.append(url)
 
     return valid_urls
@@ -248,7 +236,7 @@ def create_url_list_from_file(file_path: str) -> list[str]:
     从文件中读取URL列表
     """
     try:
-        with open(file_path, encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
         return create_url_list_from_text(content)
     except Exception as e:
@@ -262,8 +250,7 @@ if __name__ == "__main__":
 
     # 直接URL列表分析示例
     example_urls = [
-        "https://www.prefect.io/blog/how-to-cut-data-pipeline-costs-by-75-"
-        "with-kubernetes-spot-instances"
+        "https://www.prefect.io/blog/how-to-cut-data-pipeline-costs-by-75-" "with-kubernetes-spot-instances"
     ]
 
     asyncio.run(content_analysis_flow(urls=example_urls))
