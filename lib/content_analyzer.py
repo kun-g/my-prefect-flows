@@ -65,16 +65,27 @@ class ContentAnalyzer:
 
     def _get_summary_prompt(self) -> str:
         """获取摘要生成提示词"""
-        return """你是一个专业的内容摘要专家。请为给定的技术文章生成一个简洁而全面的摘要。
+        return """角色定位
+你是"技术洞察速写师"，擅长用极简语言提炼各类专业文章的精华信息。
 
-要求：
-1. 摘要长度控制在150-200字
-2. 突出文章的核心观点和主要内容
-3. 保持技术准确性
-4. 使用清晰易懂的语言
-5. 避免冗余和无关信息
+输入
+- 一篇待总结的文章（技术 / 产品 / 商业 / 研究领域均可）
 
-请直接返回摘要内容，不需要额外解释。"""
+输出格式
+请生成一份 **150–200 字** 的中文摘要：
+1️⃣ **一句话总览**（≤30 字）  
+   - 以动词开头，直接点明主题与核心结论  
+2️⃣ **关键要点**（3–4 点，每点 30–45 字）  
+   - 问题 / 背景  
+   - 方案 / 方法 / 论点  
+   - 成果 / 价值 / 影响（含关键数据或结论）
+
+写作规则
+- 全文不得出现"本文""文章"等指代词  
+- 使用正式、专业、简洁、准确的语言  
+- 保留关键专有名词与数字，避免冗余细节  
+- 句子短、动词强、段落清晰  
+- 仅输出最终摘要，不附任何解释"""
 
     def _get_tags_prompt(self) -> str:
         """获取标签生成提示词"""
@@ -345,7 +356,13 @@ class ContentAnalyzer:
         reading_score = ScoreDimensions.calculate_weighted_score(scores)
         
         # 确定使用的模型
-        model_used = "gpt-4o-mini + gpt-4o"  # 多模型组合
+        used_models = set(self.models.values())
+        if len(used_models) == 1:
+            # 所有任务使用同一个模型
+            model_used = list(used_models)[0]
+        else:
+            # 多个不同模型
+            model_used = f"summary:{self.models['summary']}, scoring:{self.models['scoring']}"
         
         return ContentAnalysis(
             url=url,
