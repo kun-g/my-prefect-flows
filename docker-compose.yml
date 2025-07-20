@@ -42,6 +42,20 @@ services:
     # restart: unless-stopped
     networks: [prefect-net]
 
+  prefect-worker-docker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      prefect:
+        condition: service_healthy
+    environment:
+      - PREFECT_API_URL=http://prefect:4200/api
+      - PREFECT_LOGGING_LEVEL=INFO
+      - WORKER_POOL_NAME=docker
+    # restart: unless-stopped
+    networks: [prefect-net]
+
   # ---------------------------------------------------------------------------
   # 3. PostgreSQL Database
   # ---------------------------------------------------------------------------
