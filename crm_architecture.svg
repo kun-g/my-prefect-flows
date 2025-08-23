@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <style>
+            .layer-title {
+                font-size: 16px;
+                font-weight: bold;
+                fill: #fff;
+                font-family: 'Microsoft YaHei', Arial, sans-serif;
+            }
+            .module-title {
+                font-size: 14px;
+                font-weight: bold;
+                fill: #333;
+                font-family: 'Microsoft YaHei', Arial, sans-serif;
+            }
+            .function-text {
+                font-size: 11px;
+                fill: #555;
+                font-family: 'Microsoft YaHei', Arial, sans-serif;
+            }
+            .portal-layer {
+                fill: #2c3e50;
+            }
+            .function-layer {
+                fill: #34495e;
+            }
+            .tech-layer {
+                fill: #7f8c8d;
+            }
+            .module-bg {
+                fill: #ecf0f1;
+                stroke: #bdc3c7;
+                stroke-width: 2;
+            }
+            .sub-module-bg {
+                fill: #ffffff;
+                stroke: #95a5a6;
+                stroke-width: 1;
+            }
+        </style>
+    </defs>
+    
+    <!-- 门户层 -->
+    <rect x="50" y="50" width="1100" height="80" class="portal-layer" rx="5"/>
+    <text x="600" y="75" text-anchor="middle" class="layer-title">门户层 (Portal Layer)</text>
+    
+    <!-- 门户层功能模块 -->
+    <rect x="80" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="155" y="125" text-anchor="middle" class="function-text">Web门户</text>
+    
+    <rect x="250" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="325" y="125" text-anchor="middle" class="function-text">移动APP</text>
+    
+    <rect x="420" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="495" y="125" text-anchor="middle" class="function-text">微信小程序</text>
+    
+    <rect x="590" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="665" y="125" text-anchor="middle" class="function-text">API接口</text>
+    
+    <rect x="760" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="835" y="125" text-anchor="middle" class="function-text">第三方集成</text>
+    
+    <rect x="930" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="1005" y="125" text-anchor="middle" class="function-text">统一认证</text>
+
+    <!-- 功能层 -->
+    <rect x="50" y="170" width="1100" height="40" class="function-layer" rx="5"/>
+    <text x="600" y="195" text-anchor="middle" class="layer-title">功能层 (Function Layer)</text>
+
+    <!-- 客户管理模块 -->
+    <rect x="80" y="230" width="200" height="180" class="module-bg" rx="5"/>
+    <text x="180" y="250" text-anchor="middle" class="module-title">客户管理</text>
+    
+    <rect x="90" y="260" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="132" y="280" text-anchor="middle" class="function-text">客户档案</text>
+    
+    <rect x="185" y="260" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="227" y="280" text-anchor="middle" class="function-text">客户分类</text>
+    
+    <rect x="90" y="300" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="132" y="320" text-anchor="middle" class="function-text">客户标签</text>
+    
+    <rect x="185" y="300" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="227" y="320" text-anchor="middle" class="function-text">客户画像</text>
+    
+    <rect x="90" y="340" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="132" y="360" text-anchor="middle" class="function-text">联系人管理</text>
+    
+    <rect x="185" y="340" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="227" y="360" text-anchor="middle" class="function-text">客户关系</text>
+    
+    <rect x="90" y="380" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="132" y="400" text-anchor="middle" class="function-text">客户生命周期</text>
+
+    <!-- 销售管理模块 -->
+    <rect x="300" y="230" width="200" height="180" class="module-bg" rx="5"/>
+    <text x="400" y="250" text-anchor="middle" class="module-title">销售管理</text>
+    
+    <rect x="310" y="260" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="352" y="280" text-anchor="middle" class="function-text">销售机会</text>
+    
+    <rect x="405" y="260" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="447" y="280" text-anchor="middle" class="function-text">销售漏斗</text>
+    
+    <rect x="310" y="300" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="352" y="320" text-anchor="middle" class="function-text">报价管理</text>
+    
+    <rect x="405" y="300" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="447" y="320" text-anchor="middle" class="function-text">合同管理</text>
+    
+    <rect x="310" y="340" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="352" y="360" text-anchor="middle" class="function-text">销售预测</text>
+    
+    <rect x="405" y="340" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="447" y="360" text-anchor="middle" class="function-text">销售团队</text>
+    
+    <rect x="310" y="380" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="352" y="400" text-anchor="middle" class="function-text">业绩考核</text>
+
+    <!-- 营销管理模块 -->
+    <rect x="520" y="230" width="200" height="180" class="module-bg" rx="5"/>
+    <text x="620" y="250" text-anchor="middle" class="module-title">营销管理</text>
+    
+    <rect x="530" y="260" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="572" y="280" text-anchor="middle" class="function-text">营销活动</text>
+    
+    <rect x="625" y="260" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="667" y="280" text-anchor="middle" class="function-text">邮件营销</text>
+    
+    <rect x="530" y="300" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="572" y="320" text-anchor="middle" class="function-text">短信营销</text>
+    
+    <rect x="625" y="300" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="667" y="320" text-anchor="middle" class="function-text">社交媒体</text>
+    
+    <rect x="530" y="340" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="572" y="360" text-anchor="middle" class="function-text">线索管理</text>
+    
+    <rect x="625" y="340" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="667" y="360" text-anchor="middle" class="function-text">营销自动化</text>
+    
+    <rect x="530" y="380" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="572" y="400" text-anchor="middle" class="function-text">ROI分析</text>
+
+    <!-- 服务管理模块 -->
+    <rect x="740" y="230" width="200" height="180" class="module-bg" rx="5"/>
+    <text x="840" y="250" text-anchor="middle" class="module-title">服务管理</text>
+    
+    <rect x="750" y="260" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="792" y="280" text-anchor="middle" class="function-text">工单管理</text>
+    
+    <rect x="845" y="260" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="887" y="280" text-anchor="middle" class="function-text">知识库</text>
+    
+    <rect x="750" y="300" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="792" y="320" text-anchor="middle" class="function-text">在线客服</text>
+    
+    <rect x="845" y="300" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="887" y="320" text-anchor="middle" class="function-text">呼叫中心</text>
+    
+    <rect x="750" y="340" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="792" y="360" text-anchor="middle" class="function-text">服务等级</text>
+    
+    <rect x="845" y="340" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="887" y="360" text-anchor="middle" class="function-text">满意度调查</text>
+    
+    <rect x="750" y="380" width="85" height="30" class="sub-module-bg" rx="2"/>
+    <text x="792" y="400" text-anchor="middle" class="function-text">服务报告</text>
+
+    <!-- 分析报表模块 -->
+    <rect x="960" y="230" width="170" height="180" class="module-bg" rx="5"/>
+    <text x="1045" y="250" text-anchor="middle" class="module-title">分析报表</text>
+    
+    <rect x="970" y="260" width="70" height="30" class="sub-module-bg" rx="2"/>
+    <text x="1005" y="280" text-anchor="middle" class="function-text">销售报表</text>
+    
+    <rect x="1050" y="260" width="70" height="30" class="sub-module-bg" rx="2"/>
+    <text x="1085" y="280" text-anchor="middle" class="function-text">客户分析</text>
+    
+    <rect x="970" y="300" width="70" height="30" class="sub-module-bg" rx="2"/>
+    <text x="1005" y="320" text-anchor="middle" class="function-text">营销效果</text>
+    
+    <rect x="1050" y="300" width="70" height="30" class="sub-module-bg" rx="2"/>
+    <text x="1085" y="320" text-anchor="middle" class="function-text">服务统计</text>
+    
+    <rect x="970" y="340" width="70" height="30" class="sub-module-bg" rx="2"/>
+    <text x="1005" y="360" text-anchor="middle" class="function-text">数据挖掘</text>
+    
+    <rect x="1050" y="340" width="70" height="30" class="sub-module-bg" rx="2"/>
+    <text x="1085" y="360" text-anchor="middle" class="function-text">预测分析</text>
+    
+    <rect x="970" y="380" width="70" height="30" class="sub-module-bg" rx="2"/>
+    <text x="1005" y="400" text-anchor="middle" class="function-text">仪表盘</text>
+
+    <!-- 技术平台层 -->
+    <rect x="50" y="440" width="1100" height="40" class="tech-layer" rx="5"/>
+    <text x="600" y="465" text-anchor="middle" class="layer-title">技术平台层 (Technology Platform Layer)</text>
+
+    <!-- 数据层 -->
+    <rect x="80" y="500" width="180" height="120" class="module-bg" rx="5"/>
+    <text x="170" y="520" text-anchor="middle" class="module-title">数据层</text>
+    
+    <rect x="90" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="127" y="547" text-anchor="middle" class="function-text">关系数据库</text>
+    
+    <rect x="175" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="212" y="547" text-anchor="middle" class="function-text">NoSQL数据库</text>
+    
+    <rect x="90" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="127" y="582" text-anchor="middle" class="function-text">数据仓库</text>
+    
+    <rect x="175" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="212" y="582" text-anchor="middle" class="function-text">缓存系统</text>
+    
+    <rect x="90" y="590" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="127" y="607" text-anchor="middle" class="function-text">文件存储</text>
+
+    <!-- 应用服务层 -->
+    <rect x="280" y="500" width="180" height="120" class="module-bg" rx="5"/>
+    <text x="370" y="520" text-anchor="middle" class="module-title">应用服务层</text>
+    
+    <rect x="290" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="327" y="547" text-anchor="middle" class="function-text">业务逻辑</text>
+    
+    <rect x="375" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="412" y="547" text-anchor="middle" class="function-text">API网关</text>
+    
+    <rect x="290" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="327" y="582" text-anchor="middle" class="function-text">微服务</text>
+    
+    <rect x="375" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="412" y="582" text-anchor="middle" class="function-text">消息队列</text>
+    
+    <rect x="290" y="590" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="327" y="607" text-anchor="middle" class="function-text">定时任务</text>
+
+    <!-- 公共组件 -->
+    <rect x="480" y="500" width="180" height="120" class="module-bg" rx="5"/>
+    <text x="570" y="520" text-anchor="middle" class="module-title">公共组件</text>
+    
+    <rect x="490" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="527" y="547" text-anchor="middle" class="function-text">权限管理</text>
+    
+    <rect x="575" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="612" y="547" text-anchor="middle" class="function-text">日志管理</text>
+    
+    <rect x="490" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="527" y="582" text-anchor="middle" class="function-text">配置管理</text>
+    
+    <rect x="575" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="612" y="582" text-anchor="middle" class="function-text">监控告警</text>
+    
+    <rect x="490" y="590" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="527" y="607" text-anchor="middle" class="function-text">安全组件</text>
+
+    <!-- 流程引擎 -->
+    <rect x="680" y="500" width="180" height="120" class="module-bg" rx="5"/>
+    <text x="770" y="520" text-anchor="middle" class="module-title">流程引擎</text>
+    
+    <rect x="690" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="727" y="547" text-anchor="middle" class="function-text">工作流引擎</text>
+    
+    <rect x="775" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="812" y="547" text-anchor="middle" class="function-text">规则引擎</text>
+    
+    <rect x="690" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="727" y="582" text-anchor="middle" class="function-text">审批流程</text>
+    
+    <rect x="775" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="812" y="582" text-anchor="middle" class="function-text">表单引擎</text>
+    
+    <rect x="690" y="590" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="727" y="607" text-anchor="middle" class="function-text">流程监控</text>
+
+    <!-- 系统管理 -->
+    <rect x="880" y="500" width="180" height="120" class="module-bg" rx="5"/>
+    <text x="970" y="520" text-anchor="middle" class="module-title">系统管理</text>
+    
+    <rect x="890" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="927" y="547" text-anchor="middle" class="function-text">用户管理</text>
+    
+    <rect x="975" y="530" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="1012" y="547" text-anchor="middle" class="function-text">角色管理</text>
+    
+    <rect x="890" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="927" y="582" text-anchor="middle" class="function-text">组织架构</text>
+    
+    <rect x="975" y="565" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="1012" y="582" text-anchor="middle" class="function-text">系统配置</text>
+    
+    <rect x="890" y="590" width="75" height="25" class="sub-module-bg" rx="2"/>
+    <text x="927" y="607" text-anchor="middle" class="function-text">数据备份</text>
+
+    <!-- 基础设施层 -->
+    <rect x="50" y="650" width="1100" height="40" class="tech-layer" rx="5"/>
+    <text x="600" y="675" text-anchor="middle" class="layer-title">基础设施层 (Infrastructure Layer)</text>
+
+    <!-- 基础设施组件 -->
+    <rect x="80" y="700" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="155" y="725" text-anchor="middle" class="function-text">云服务平台</text>
+    
+    <rect x="250" y="700" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="325" y="725" text-anchor="middle" class="function-text">容器化部署</text>
+    
+    <rect x="420" y="700" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="495" y="725" text-anchor="middle" class="function-text">负载均衡</text>
+    
+    <rect x="590" y="700" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="665" y="725" text-anchor="middle" class="function-text">CDN加速</text>
+    
+    <rect x="760" y="700" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="835" y="725" text-anchor="middle" class="function-text">网络安全</text>
+    
+    <rect x="930" y="700" width="150" height="40" class="sub-module-bg" rx="3"/>
+    <text x="1005" y="725" text-anchor="middle" class="function-text">运维监控</text>
+
+    <!-- 连接线 -->
+    <line x1="600" y1="140" x2="600" y2="170" stroke="#7f8c8d" stroke-width="2"/>
+    <line x1="600" y1="410" x2="600" y2="440" stroke="#7f8c8d" stroke-width="2"/>
+    <line x1="600" y1="620" x2="600" y2="650" stroke="#7f8c8d" stroke-width="2"/>
+    <line x1="600" y1="690" x2="600" y2="700" stroke="#7f8c8d" stroke-width="2"/>
+</svg>

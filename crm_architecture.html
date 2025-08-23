@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业CRM客户关系管理系统功能架构图</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .svg-container {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .svg-container object {
+            width: 100%;
+            max-width: 1200px;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .description {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .description h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .description ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .description li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        .layer-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .layer-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .layer-card h4 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .layer-card ul {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>企业CRM客户关系管理系统功能架构图</h1>
+        
+        <div class="svg-container">
+            <object data="crm_architecture.svg" type="image/svg+xml">
+                您的浏览器不支持SVG显示，请升级浏览器或查看SVG文件。
+            </object>
+        </div>
+        
+        <div class="description">
+            <h3>架构说明：</h3>
+            <ul>
+                <li><strong>门户层</strong>：提供多渠道用户访问入口，包括Web、移动端、API等</li>
+                <li><strong>功能层</strong>：核心业务功能模块，涵盖客户管理、销售、营销、服务和分析等</li>
+                <li><strong>技术平台层</strong>：支撑业务功能的技术组件和公共服务</li>
+                <li><strong>基础设施层</strong>：底层技术基础设施，提供运行环境和基础服务</li>
+            </ul>
+        </div>
+
+        <div class="layer-info">
+            <div class="layer-card">
+                <h4>门户层功能</h4>
+                <ul>
+                    <li>Web门户 - 桌面端访问界面</li>
+                    <li>移动APP - iOS/Android应用</li>
+                    <li>微信小程序 - 轻量级移动应用</li>
+                    <li>API接口 - 开放接口服务</li>
+                    <li>第三方集成 - 外部系统对接</li>
+                    <li>统一认证 - 单点登录SSO</li>
+                </ul>
+            </div>
+
+            <div class="layer-card">
+                <h4>客户管理模块</h4>
+                <ul>
+                    <li>客户档案 - 完整客户信息管理</li>
+                    <li>客户分类 - 多维度客户分组</li>
+                    <li>客户标签 - 灵活标签体系</li>
+                    <li>客户画像 - 360度客户视图</li>
+                    <li>联系人管理 - 关键联系人维护</li>
+                    <li>客户关系 - 关系网络管理</li>
+                    <li>客户生命周期 - 全生命周期跟踪</li>
+                </ul>
+            </div>
+
+            <div class="layer-card">
+                <h4>销售管理模块</h4>
+                <ul>
+                    <li>销售机会 - 商机全程跟踪</li>
+                    <li>销售漏斗 - 可视化销售流程</li>
+                    <li>报价管理 - 智能报价系统</li>
+                    <li>合同管理 - 合同全生命周期</li>
+                    <li>销售预测 - 数据驱动预测</li>
+                    <li>销售团队 - 团队协作管理</li>
+                    <li>业绩考核 - 多维度绩效评估</li>
+                </ul>
+            </div>
+
+            <div class="layer-card">
+                <h4>营销管理模块</h4>
+                <ul>
+                    <li>营销活动 - 活动策划执行</li>
+                    <li>邮件营销 - 精准邮件推送</li>
+                    <li>短信营销 - 批量短信发送</li>
+                    <li>社交媒体 - 社交平台管理</li>
+                    <li>线索管理 - 潜客线索跟进</li>
+                    <li>营销自动化 - 智能营销流程</li>
+                    <li>ROI分析 - 营销投资回报</li>
+                </ul>
+            </div>
+
+            <div class="layer-card">
+                <h4>服务管理模块</h4>
+                <ul>
+                    <li>工单管理 - 服务请求处理</li>
+                    <li>知识库 - 服务知识沉淀</li>
+                    <li>在线客服 - 实时客户服务</li>
+                    <li>呼叫中心 - 电话服务支持</li>
+                    <li>服务等级 - SLA管理</li>
+                    <li>满意度调查 - 服务质量评估</li>
+                    <li>服务报告 - 服务数据分析</li>
+                </ul>
+            </div>
+
+            <div class="layer-card">
+                <h4>技术平台层</h4>
+                <ul>
+                    <li>数据层 - 数据存储与管理</li>
+                    <li>应用服务层 - 业务逻辑处理</li>
+                    <li>公共组件 - 通用功能服务</li>
+                    <li>流程引擎 - 业务流程自动化</li>
+                    <li>系统管理 - 系统运维管理</li>
+                    <li>基础设施 - 底层技术支撑</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="description" style="margin-top: 30px;">
+            <h3>技术特点：</h3>
+            <ul>
+                <li><strong>分层架构</strong>：清晰的四层架构设计，职责分离，便于维护和扩展</li>
+                <li><strong>模块化设计</strong>：功能模块独立，支持灵活配置和定制化开发</li>
+                <li><strong>微服务架构</strong>：支持分布式部署，提高系统可扩展性和可靠性</li>
+                <li><strong>开放集成</strong>：提供丰富的API接口，支持第三方系统集成</li>
+                <li><strong>移动优先</strong>：全面支持移动端访问，适应移动办公需求</li>
+                <li><strong>数据驱动</strong>：内置强大的分析报表功能，支持数据驱动决策</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+            <!-- 门户层 -->
+            <rect x="50" y="50" width="1100" height="80" class="portal-layer" rx="5"/>
+            <text x="600" y="75" text-anchor="middle" class="layer-title">门户层 (Portal Layer)</text>
+            
+            <!-- 门户层功能模块 -->
+            <rect x="80" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+            <text x="155" y="125" text-anchor="middle" class="function-text">Web门户</text>
+            
+            <rect x="250" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+            <text x="325" y="125" text-anchor="middle" class="function-text">移动APP</text>
+            
+            <rect x="420" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+            <text x="495" y="125" text-anchor="middle" class="function-text">微信小程序</text>
+            
+            <rect x="590" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+            <text x="665" y="125" text-anchor="middle" class="function-text">API接口</text>
+            
+            <rect x="760" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+            <text x="835" y="125" text-anchor="middle" class="function-text">第三方集成</text>
+            
+            <rect x="930" y="100" width="150" height="40" class="sub-module-bg" rx="3"/>
+            <text x="1005" y="125" text-anchor="middle" class="function-text">统一认证</text>
